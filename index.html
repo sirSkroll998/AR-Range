@@ -69,6 +69,7 @@ reticle.matrixAutoUpdate = false;
 reticle.visible = false;
 scene.add(reticle);
 
+
 function createTarget() {
   const group = new THREE.Group();
 
@@ -77,6 +78,11 @@ function createTarget() {
       new THREE.TorusGeometry(radius, thickness, 12, 64),
       new THREE.MeshBasicMaterial({ color })
     );
+
+    // Ustaw pierścień w tej samej płaszczyźnie
+    // co zielony wskaźnik wykrytej powierzchni.
+    ring.rotation.x = -Math.PI / 2;
+
     group.add(ring);
   }
 
@@ -87,6 +93,7 @@ function createTarget() {
 
   return group;
 }
+
 
 const target = createTarget();
 target.visible = false;
