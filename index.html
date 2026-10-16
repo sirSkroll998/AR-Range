@@ -4,19 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR Range</title>
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-    html, body {
+    body {
       margin: 0;
-      width: 100%;
-      height: 100%;
       overflow: hidden;
-      background: transparent;
+      background: #111;
       font-family: Arial, sans-serif;
+      touch-action: manipulation;
     }
 
     #status {
@@ -27,12 +28,11 @@
       width: 90%;
       padding: 12px;
       border-radius: 10px;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.75);
       color: white;
       text-align: center;
-      font-size: 17px;
-      font-weight: bold;
-      z-index: 100;
+      font-size: 16px;
+      z-index: 10;
       pointer-events: none;
     }
 
@@ -42,11 +42,10 @@
       top: 50%;
       transform: translate(-50%, -50%);
       color: #00ff88;
-      font: bold 38px Arial, sans-serif;
-      text-shadow: 0 0 5px black;
-      z-index: 101;
+      font: bold 34px Arial, sans-serif;
+      z-index: 5;
       pointer-events: none;
-      display: none;
+      text-shadow: 0 0 5px black;
     }
 
     #instructions {
@@ -58,8 +57,8 @@
       color: white;
       text-align: center;
       font-size: 14px;
-      text-shadow: 0 1px 5px black;
-      z-index: 100;
+      text-shadow: 0 1px 4px black;
+      z-index: 5;
       pointer-events: none;
     }
 
@@ -70,10 +69,11 @@
 </head>
 
 <body>
-  <div id="status">AR RANGE — przygotowanie</div>
+  <div id="status">AR RANGE — przygotowanie sceny</div>
   <div id="crosshair">+</div>
   <div id="instructions">
-    Uruchom AR i skieruj telefon na podłogę.
+    Uruchom AR. Skieruj telefon na podłogę i dotknij ekranu,
+    aby ustawić tarczę. Potem celuj środkiem ekranu i strzelaj.
   </div>
 
   <script type="module">
@@ -84,13 +84,15 @@
       'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/webxr/ARButton.js';
 
     const status = document.getElementById('status');
-    const crosshair = document.getElementById('crosshair');
-    const instructions = document.getElementById('instructions');
 
+    // SCENA
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(
-      70, window.innerWidth / window.innerHeight, 0.01, 20
+      70,
+      window.innerWidth / window.innerHeight,
+      0.01,
+      20
     );
 
     const renderer = new THREE.WebGLRenderer({
@@ -105,9 +107,16 @@
 
     document.body.appendChild(renderer.domElement);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2));
+    // OŚWIETLENIE
+    const light = new THREE.HemisphereLight(
+      0xffffff,
+      0x777777,
+      2
+    );
 
-    // KÓŁKO WYBORU MIEJSCA
+    scene.add(light);
+
+    // CELOWNIK AR — wskazuje wykrytą powierzchnię
     const reticle = new THREE.Mesh(
       new THREE.RingGeometry(0.07, 0.09, 32),
       new THREE.MeshBasicMaterial({
@@ -121,12 +130,13 @@
     reticle.visible = false;
     scene.add(reticle);
 
+    // TABLICE CELÓW
     const targets = [];
 
-    // TARCZA
     function createTarget() {
       const group = new THREE.Group();
 
+      // Niewidoczna powierzchnia wykrywania trafień
       const hitArea = new THREE.Mesh(
         new THREE.CircleGeometry(0.21, 48),
         new THREE.MeshBasicMaterial({
@@ -142,14 +152,22 @@
 
       function addRing(radius, thickness, color) {
         const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(radius, thickness, 12, 64),
-          new THREE.MeshBasicMaterial({ color })
+          new THREE.TorusGeometry(
+            radius,
+            thickness,
+            12,
+            64
+          ),
+          new THREE.MeshBasicMaterial({
+            color: color
+          })
         );
 
         ring.rotation.x = -Math.PI / 2;
         group.add(ring);
       }
 
+      // Tarcza w czerwono-białe pierścienie
       addRing(0.20, 0.012, 0xffffff);
       addRing(0.15, 0.015, 0xe52b2b);
       addRing(0.10, 0.012, 0xffffff);
@@ -158,16 +176,13 @@
       return group;
     }
 
-    // PRZYCISK URUCHAMIAJĄCY AR
-    document.body.appendChild(
-      ARButton.createButton(renderer, {
-        requiredFeatures: ['hit-test'],
-        optionalFeatures: ['dom-overlay'],
-        domOverlay: { root: document.body }
-      })
-    );
+    // URUCHOMIENIE TRYBU AR
+    const arButton = ARButton.createButton(renderer, {
+      requiredFeatures: ['hit-test']
+    });
 
-    // WEJŚCIE WEBXR — PRZYWRÓCONY MECHANIZM
+    document.body.appendChild(arButton);
+
     const controller = renderer.xr.getController(0);
     scene.add(controller);
 
@@ -179,8 +194,14 @@
     const raycaster = new THREE.Raycaster();
     const shotOrigin = new THREE.Vector3();
     const shotDirection = new THREE.Vector3();
+    const hitMarkers = [];
 
     function shoot() {
+      if (targets.length === 0) {
+        status.textContent = 'Najpierw umieść tarczę!';
+        return;
+      }
+
       const xrCamera = renderer.xr.getCamera(camera);
 
       xrCamera.updateMatrixWorld(true);
@@ -193,7 +214,6 @@
 
       if (hits.length === 0) {
         status.textContent = 'PUDŁO!';
-        status.style.color = '#ff7777';
         return;
       }
 
@@ -202,32 +222,36 @@
       const marker = new THREE.Mesh(
         new THREE.SphereGeometry(0.018, 16, 12),
         new THREE.MeshBasicMaterial({
-          color: 0xffaa00,
-          depthTest: false
+          color: 0xffaa00
         })
       );
 
       marker.position.copy(hit.point);
-      marker.renderOrder = 20;
       scene.add(marker);
+      hitMarkers.push(marker);
 
       status.textContent = 'TRAFIENIE!';
-      status.style.color = '#00ff88';
 
       setTimeout(() => {
         scene.remove(marker);
         marker.geometry.dispose();
         marker.material.dispose();
+
+        const index = hitMarkers.indexOf(marker);
+
+        if (index !== -1) {
+          hitMarkers.splice(index, 1);
+        }
       }, 5000);
     }
 
-    // PIERWSZE SELECT USTAWIA TARCZĘ,
-    // KOLEJNE SELECT ODDają STRZAŁ
+    // PIERWSZE DOTKNIĘCIE USTAWIA TARCZĘ.
+    // KOLEJNE DOTKNIĘCIA ODDAJĄ STRZAŁ.
     controller.addEventListener('select', () => {
       if (targets.length === 0) {
         if (!reticle.visible) {
           status.textContent =
-            'Znajdź powierzchnię i poczekaj na zielone kółko.';
+            'Skieruj telefon na podłogę i znajdź zielony celownik.';
           return;
         }
 
@@ -239,85 +263,84 @@
         scene.add(target);
         targets.push(target);
 
-        reticle.visible = false;
-        crosshair.style.display = 'block';
+        status.textContent =
+          'Tarcza gotowa — celuj środkiem ekranu i strzelaj!';
 
-        instructions.textContent =
-          'Celuj znakiem + w tarczę i użyj dotknięcia, aby strzelić.';
-
-        status.textContent = 'TARCZA GOTOWA — CELUJ I STRZELAJ';
-        status.style.color = '#00ff88';
         return;
       }
 
       shoot();
     });
 
-    // PĘTLA AR — ZACHOWANY HIT-TEST
+    // PĘTLA RENDERUJĄCA AR
     renderer.setAnimationLoop((timestamp, frame) => {
       if (frame) {
         const session = renderer.xr.getSession();
-        const referenceSpace = renderer.xr.getReferenceSpace();
+
+        const referenceSpace =
+          renderer.xr.getReferenceSpace();
 
         if (!hitTestSourceRequested) {
           session.requestReferenceSpace('viewer')
             .then((viewerSpace) => {
-              return session.requestHitTestSource({
+              session.requestHitTestSource({
                 space: viewerSpace
+              }).then((source) => {
+                hitTestSource = source;
               });
-            })
-            .then((source) => {
-              hitTestSource = source;
-            })
-            .catch((error) => {
-              console.error('Hit-test error:', error);
-              status.textContent = 'Błąd wykrywania AR';
             });
 
           session.addEventListener('end', () => {
             hitTestSourceRequested = false;
             hitTestSource = null;
             reticle.visible = false;
-            crosshair.style.display = 'none';
-            targets.length = 0;
-
-            status.textContent = 'AR RANGE — przygotowanie';
-            instructions.textContent =
-              'Uruchom AR i skieruj telefon na podłogę.';
           });
 
           hitTestSourceRequested = true;
         }
 
-        if (hitTestSource && targets.length === 0) {
-          const results = frame.getHitTestResults(hitTestSource);
+        if (hitTestSource) {
+          const results = frame.getHitTestResults(
+            hitTestSource
+          );
 
           if (results.length > 0) {
             const pose = results[0].getPose(referenceSpace);
 
             reticle.visible = true;
-            reticle.matrix.fromArray(pose.transform.matrix);
+            reticle.matrix.fromArray(
+              pose.transform.matrix
+            );
 
-            status.textContent =
-              'Dotknij ekranu, aby ustawić tarczę.';
+            if (targets.length === 0) {
+              status.textContent =
+                'Dotknij ekranu, aby ustawić tarczę.';
+            }
           } else {
             reticle.visible = false;
 
-            status.textContent =
-              'Powoli porusz telefonem, aby znaleźć powierzchnię.';
+            if (targets.length === 0) {
+              status.textContent =
+                'Powoli poruszaj telefonem, aby wykryć powierzchnię.';
+            }
           }
-        } else if (targets.length > 0) {
-          reticle.visible = false;
         }
       }
 
       renderer.render(scene, camera);
     });
 
+    // DOPASOWANIE DO ROZMIARU EKRANU
     window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.aspect =
+        window.innerWidth / window.innerHeight;
+
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+      );
     });
   </script>
 </body>
