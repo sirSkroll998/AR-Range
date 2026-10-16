@@ -2,301 +2,432 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AR RANGE</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Range</title>
 
-<style>
-  body {
-    margin: 0;
-    background: #17211b;
-    color: white;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
-  }
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #000;
+      color: white;
+    }
 
-  #status {
-    position: fixed;
-    top: 12px;
-    left: 12px;
-    right: 12px;
-    z-index: 10;
-    padding: 12px;
-    border-radius: 10px;
-    background: #17211bdd;
-    text-align: center;
-    pointer-events: none;
-  }
+    canvas {
+      display: block;
+    }
 
-  #crosshair {
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-    display: none;
-    color: #00ff88;
-    font: bold 38px Arial, sans-serif;
-    text-shadow: 0 0 4px black, 0 0 8px black;
-    pointer-events: none;
-  }
+    #status {
+      position: fixed;
+      top: 12px;
+      left: 10px;
+      right: 10px;
+      z-index: 10;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.75);
+      text-align: center;
+      font-size: 15px;
+      pointer-events: none;
+    }
 
-  canvas {
-    display: block;
-  }
-</style>
+    #crosshair {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      font-size: 32px;
+      font-weight: bold;
+      color: #00ff88;
+      text-shadow: 0 0 4px black;
+      display: none;
+      pointer-events: none;
+    }
+
+    #scoreboard {
+      display: none;
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      bottom: 12px;
+      z-index: 10;
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    #scoreboard h3 {
+      margin: 0 0 6px;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    #scoreboard table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #scoreboard th,
+    #scoreboard td {
+      padding: 4px;
+      text-align: center;
+      border-bottom: 1px solid #555;
+    }
+
+    #scoreboard th {
+      color: #00ff88;
+    }
+
+    #total {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #00ff88;
+    }
+  </style>
 </head>
 
 <body>
-<div id="status">AR RANGE — przygotowanie sceny</div>
-<div id="crosshair">+</div>
+  <div id="status">AR RANGE — uruchom grę</div>
+  <div id="crosshair">+</div>
 
-<script type="module">
-import * as THREE from
-  'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+  <div id="scoreboard">
+    <h3>Wyniki strzelania</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Strzał</th>
+          <th>Wynik</th>
+          <th>Punkty</th>
+        </tr>
+      </thead>
+      <tbody id="scoreRows"></tbody>
+    </table>
+    <div id="total">Suma: 0 / 50</div>
+  </div>
 
-import { ARButton } from
-  'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/webxr/ARButton.js';
+  <script type="module">
+    import * as THREE from
+      'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-const status = document.getElementById('status');
-const crosshair = document.getElementById('crosshair');
+    import { ARButton } from
+      'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/webxr/ARButton.js';
 
-const scene = new THREE.Scene();
+    const status = document.getElementById('status');
+    const crosshair = document.getElementById('crosshair');
+    const scoreboard = document.getElementById('scoreboard');
+    const scoreRows = document.getElementById('scoreRows');
+    const totalElement = document.getElementById('total');
 
-const camera = new THREE.PerspectiveCamera(
-  70, window.innerWidth / window.innerHeight, 0.01, 30
-);
+    const scene = new THREE.Scene();
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  alpha: true
-});
-
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.xr.enabled = true;
-renderer.setClearColor(0x000000, 0);
-document.body.appendChild(renderer.domElement);
-
-scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 2));
-
-// WSKAŹNIK MIEJSCA USTAWIENIA TARCZY
-const reticle = new THREE.Mesh(
-  new THREE.RingGeometry(0.07, 0.10, 32)
-    .rotateX(-Math.PI / 2),
-  new THREE.MeshBasicMaterial({ color: 0x00ff88 })
-);
-
-reticle.matrixAutoUpdate = false;
-reticle.visible = false;
-scene.add(reticle);
-
-// TARCZA
-function createTarget() {
-  const group = new THREE.Group();
-
-  // Niewidoczna powierzchnia, która umożliwia
-  // wykrywanie trafień również w środku tarczy.
-  const hitArea = new THREE.Mesh(
-    new THREE.CircleGeometry(0.21, 48),
-    new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 0.001,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    })
-  );
-
-  hitArea.rotation.x = -Math.PI / 2;
-  group.add(hitArea);
-
-  function addRing(radius, thickness, color) {
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(radius, thickness, 12, 64),
-      new THREE.MeshBasicMaterial({ color })
+    const camera = new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth / window.innerHeight,
+      0.01,
+      20
     );
 
-    ring.rotation.x = -Math.PI / 2;
-    group.add(ring);
-  }
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true
+    });
 
-  addRing(0.20, 0.012, 0xffffff);
-  addRing(0.15, 0.015, 0xe52b2b);
-  addRing(0.10, 0.012, 0xffffff);
-  addRing(0.05, 0.018, 0xe52b2b);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
 
-  return group;
-}
+    const arButton = ARButton.createButton(renderer, {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: document.body }
+    });
 
-const target = createTarget();
-target.visible = false;
-scene.add(target);
+    document.body.appendChild(arButton);
 
-// AR — zachowujemy dotychczasowy sposób uruchamiania.
-  const arButton = ARButton.createButton(renderer, {
-  requiredFeatures: ['hit-test'],
-  optionalFeatures: ['dom-overlay'],
-  domOverlay: { root: document.body }
-});
+    const reticle = new THREE.Mesh(
+      new THREE.RingGeometry(0.06, 0.08, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0x00ff00,
+        side: THREE.DoubleSide
+      })
+    );
 
-document.body.appendChild(arButton);
-
-let hitTestSource = null;
-let hitTestRequested = false;
-
-const controller = renderer.xr.getController(0);
-scene.add(controller);
-
-// NARZĘDZIA DO STRZELANIA
-const raycaster = new THREE.Raycaster();
-const shotOrigin = new THREE.Vector3();
-const shotDirection = new THREE.Vector3();
-
-let shotCount = 0;
-let marker = null;
-let markerTimer = null;
-
-// OBSŁUGA DOTKNIĘCIA — TEN SAM MECHANIZM CO W DZIAŁAJĄCEJ WERSJI
-controller.addEventListener('select', () => {
-  // Pierwsze dotknięcie umieszcza tarczę.
-  if (!target.visible) {
-    if (!reticle.visible) {
-      status.textContent =
-        'Najpierw skieruj telefon na wykrytą powierzchnię.';
-      return;
-    }
-
-    target.position.setFromMatrixPosition(reticle.matrix);
-    target.quaternion.setFromRotationMatrix(reticle.matrix);
-    target.visible = true;
-
-    // Wskaźnik miejsca znika, celownik się pojawia.
+    reticle.rotation.x = -Math.PI / 2;
+    reticle.matrixAutoUpdate = false;
     reticle.visible = false;
-    crosshair.style.display = 'block';
+    scene.add(reticle);
 
-    status.textContent = 'Tarcza gotowa — celuj i strzelaj!';
-    status.style.color = '#00ff88';
-    return;
-  }
+    function createTarget() {
+      const group = new THREE.Group();
 
-  // Kolejne dotknięcie oddaje strzał.
-  const xrCamera = renderer.xr.getCamera(camera);
-
-  xrCamera.updateMatrixWorld(true);
-  xrCamera.getWorldPosition(shotOrigin);
-  xrCamera.getWorldDirection(shotDirection);
-
-  raycaster.set(shotOrigin, shotDirection);
-
-  const hits = raycaster.intersectObject(target, true);
-  shotCount++;
-
-  if (hits.length === 0) {
-    status.textContent = 'PUDŁO!  Strzał: ' + shotCount;
-    status.style.color = '#ff7777';
-    return;
-  }
-
-  // Usuń poprzedni znacznik trafienia.
-  if (marker) {
-    scene.remove(marker);
-    marker.geometry.dispose();
-    marker.material.dispose();
-    marker = null;
-  }
-
-  if (markerTimer) {
-    clearTimeout(markerTimer);
-  }
-
-  // Znacznik trafienia.
-  marker = new THREE.Mesh(
-    new THREE.SphereGeometry(0.018, 16, 12),
-    new THREE.MeshBasicMaterial({
-      color: 0xffaa00,
-      depthTest: false
-    })
-  );
-
-  marker.position.copy(hits[0].point);
-  marker.renderOrder = 10;
-  scene.add(marker);
-
-  status.textContent = 'TRAFIENIE!  Strzał: ' + shotCount;
-  status.style.color = '#00ff88';
-
-  const currentMarker = marker;
-
-  markerTimer = setTimeout(() => {
-    scene.remove(currentMarker);
-    currentMarker.geometry.dispose();
-    currentMarker.material.dispose();
-
-    if (marker === currentMarker) {
-      marker = null;
-    }
-  }, 3000);
-});
-
-// PĘTLA AR — zachowujemy mechanizm hit-test.
-renderer.setAnimationLoop((time, frame) => {
-  if (frame) {
-    const session = renderer.xr.getSession();
-    const referenceSpace = renderer.xr.getReferenceSpace();
-
-    if (!hitTestRequested) {
-      hitTestRequested = true;
-
-      session.requestReferenceSpace('viewer')
-        .then(viewerSpace =>
-          session.requestHitTestSource({ space: viewerSpace })
-        )
-        .then(source => {
-          hitTestSource = source;
+      const hitArea = new THREE.Mesh(
+        new THREE.CircleGeometry(0.21, 64),
+        new THREE.MeshBasicMaterial({
+          transparent: true,
+          opacity: 0.001,
+          side: THREE.DoubleSide,
+          depthWrite: false
         })
-        .catch(error => {
-          status.textContent =
-            'Błąd wykrywania powierzchni: ' + error.message;
-        });
+      );
 
-      session.addEventListener('end', () => {
-        hitTestRequested = false;
-        hitTestSource = null;
+      hitArea.rotation.x = -Math.PI / 2;
+      group.add(hitArea);
 
-        target.visible = false;
-        reticle.visible = false;
-        crosshair.style.display = 'none';
+      function addRing(radius, thickness, color) {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(radius, thickness, 12, 64),
+          new THREE.MeshBasicMaterial({ color })
+        );
 
-        shotCount = 0;
-        status.textContent = 'AR RANGE — przygotowanie sceny';
-        status.style.color = 'white';
-      });
-    }
-
-    if (hitTestSource && !target.visible) {
-      const results = frame.getHitTestResults(hitTestSource);
-      reticle.visible = results.length > 0;
-
-      if (reticle.visible) {
-        const pose = results[0].getPose(referenceSpace);
-        reticle.matrix.fromArray(pose.transform.matrix);
-
-        status.textContent = 'Dotknij ekranu, aby umieścić tarczę.';
-        status.style.color = 'white';
+        ring.rotation.x = -Math.PI / 2;
+        group.add(ring);
       }
-    } else if (target.visible) {
-      reticle.visible = false;
+
+      addRing(0.20, 0.012, 0xffffff);
+      addRing(0.15, 0.015, 0xe52b2b);
+      addRing(0.10, 0.012, 0xffffff);
+      addRing(0.05, 0.018, 0xe52b2b);
+
+      return group;
     }
-  }
 
-  renderer.render(scene, camera);
-});
+    const target = createTarget();
+    target.visible = false;
+    scene.add(target);
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-</script>
+    const controller = renderer.xr.getController(0);
+    scene.add(controller);
+
+    const raycaster = new THREE.Raycaster();
+    const shotOrigin = new THREE.Vector3();
+    const shotDirection = new THREE.Vector3();
+
+    let hitTestSource = null;
+    let hitTestRequested = false;
+    let shotCount = 0;
+    let totalPoints = 0;
+    let marker = null;
+    let markerTimer = null;
+    let gameFinished = false;
+
+    function removeMarker() {
+      if (markerTimer) {
+        clearTimeout(markerTimer);
+        markerTimer = null;
+      }
+
+      if (marker) {
+        scene.remove(marker);
+        marker.geometry.dispose();
+        marker.material.dispose();
+        marker = null;
+      }
+    }
+
+    function showMarker(point, color) {
+      removeMarker();
+
+      marker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.018, 16, 12),
+        new THREE.MeshBasicMaterial({
+          color,
+          depthTest: false
+        })
+      );
+
+      marker.position.copy(point);
+      marker.renderOrder = 10;
+      scene.add(marker);
+
+      const currentMarker = marker;
+
+      markerTimer = setTimeout(() => {
+        scene.remove(currentMarker);
+        currentMarker.geometry.dispose();
+        currentMarker.material.dispose();
+
+        if (marker === currentMarker) {
+          marker = null;
+          markerTimer = null;
+        }
+      }, 3000);
+    }
+
+    function getPoints(distance) {
+      if (distance <= 0.05) return 10;
+      if (distance <= 0.10) return 8;
+      if (distance <= 0.15) return 6;
+      if (distance <= 0.20) return 4;
+      return 0;
+    }
+
+    function addResult(points) {
+      shotCount++;
+      totalPoints += points;
+
+      const row = document.createElement('tr');
+
+      const shotCell = document.createElement('td');
+      shotCell.textContent = shotCount;
+
+      const resultCell = document.createElement('td');
+      resultCell.textContent = points > 0 ? 'TRAFIENIE' : 'PUDŁO';
+
+      const pointsCell = document.createElement('td');
+      pointsCell.textContent = points;
+
+      row.appendChild(shotCell);
+      row.appendChild(resultCell);
+      row.appendChild(pointsCell);
+
+      scoreRows.appendChild(row);
+      totalElement.textContent = 'Suma: ' + totalPoints + ' / 50';
+
+      scoreboard.style.display = 'block';
+    }
+
+    controller.addEventListener('select', () => {
+      // Pierwsze dotknięcie umieszcza tarczę.
+      if (!target.visible) {
+        if (!reticle.visible) {
+          status.textContent =
+            'Najpierw skieruj telefon na wykrytą powierzchnię.';
+          return;
+        }
+
+        target.position.setFromMatrixPosition(reticle.matrix);
+        target.quaternion.setFromRotationMatrix(reticle.matrix);
+        target.visible = true;
+
+        reticle.visible = false;
+        crosshair.style.display = 'block';
+        scoreboard.style.display = 'block';
+
+        status.textContent = 'Tarcza gotowa — oddaj 5 strzałów!';
+        status.style.color = '#00ff88';
+        return;
+      }
+
+      if (gameFinished || shotCount >= 5) {
+        return;
+      }
+
+      const xrCamera = renderer.xr.getCamera(camera);
+      xrCamera.updateMatrixWorld(true);
+      xrCamera.getWorldPosition(shotOrigin);
+      xrCamera.getWorldDirection(shotDirection);
+
+      raycaster.set(shotOrigin, shotDirection);
+
+      const hits = raycaster.intersectObject(target, true);
+      let points = 0;
+
+      if (hits.length > 0) {
+        const hitPoint = hits[0].point.clone();
+        const localPoint = target.worldToLocal(hitPoint.clone());
+
+        // Tarcza leży w płaszczyźnie XZ grupy.
+        const distance = Math.sqrt(
+          localPoint.x * localPoint.x +
+          localPoint.z * localPoint.z
+        );
+
+        points = getPoints(distance);
+
+        if (points > 0) {
+          showMarker(hitPoint, 0xffaa00);
+        }
+
+        status.textContent = points > 0
+          ? 'TRAFIENIE! ' + points + ' pkt.'
+          : 'PUDŁO! 0 pkt.';
+
+        status.style.color = points > 0 ? '#00ff88' : '#ff7777';
+      } else {
+        status.textContent = 'PUDŁO! 0 pkt.';
+        status.style.color = '#ff7777';
+        removeMarker();
+      }
+
+      addResult(points);
+
+      if (shotCount === 5) {
+        gameFinished = true;
+        status.textContent =
+          'KONIEC! Wynik: ' + totalPoints + ' / 50';
+        status.style.color = '#00ff88';
+        crosshair.style.display = 'none';
+      } else {
+        status.textContent += '  Strzał ' + shotCount + ' / 5';
+      }
+    });
+
+    renderer.xr.addEventListener('sessionstart', () => {
+      hitTestRequested = false;
+      hitTestSource = null;
+      status.textContent = 'Szukam powierzchni dla tarczy...';
+    });
+
+    renderer.xr.addEventListener('sessionend', () => {
+      hitTestSource = null;
+      hitTestRequested = false;
+    });
+
+    renderer.setAnimationLoop(async (timestamp, frame) => {
+      if (frame) {
+        const session = renderer.xr.getSession();
+
+        if (session && !hitTestRequested) {
+          hitTestRequested = true;
+
+          try {
+            const viewerSpace =
+              await session.requestReferenceSpace('viewer');
+
+            hitTestSource =
+              await session.requestHitTestSource({
+                space: viewerSpace
+              });
+          } catch (error) {
+            status.textContent = 'Nie udało się uruchomić AR.';
+            console.error(error);
+          }
+        }
+
+        if (frame && hitTestSource && !target.visible) {
+          const referenceSpace = renderer.xr.getReferenceSpace();
+          const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+          if (hitTestResults.length > 0) {
+            const hit = hitTestResults[0];
+            const pose = hit.getPose(referenceSpace);
+
+            reticle.visible = true;
+            reticle.matrix.fromArray(pose.transform.matrix);
+          } else {
+            reticle.visible = false;
+          }
+        } else if (target.visible) {
+          reticle.visible = false;
+        }
+      }
+
+      renderer.render(scene, camera);
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
 </body>
 </html>
