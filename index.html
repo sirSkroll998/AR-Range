@@ -5,12 +5,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AR RANGE</title>
+
 <style>
   body {
     margin: 0;
     background: #17211b;
     color: white;
     font-family: Arial, sans-serif;
+    overflow: hidden;
   }
 
   #status {
@@ -23,13 +25,31 @@
     border-radius: 10px;
     background: #17211bdd;
     text-align: center;
+    pointer-events: none;
   }
 
-  canvas { display: block; }
+  #crosshair {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    display: none;
+    color: #00ff88;
+    font: bold 38px Arial, sans-serif;
+    text-shadow: 0 0 4px black, 0 0 8px black;
+    pointer-events: none;
+  }
+
+  canvas {
+    display: block;
+  }
 </style>
 </head>
+
 <body>
 <div id="status">AR RANGE — przygotowanie sceny</div>
+<div id="crosshair">+</div>
 
 <script type="module">
 import * as THREE from
@@ -39,6 +59,7 @@ import { ARButton } from
   'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/webxr/ARButton.js';
 
 const status = document.getElementById('status');
+const crosshair = document.getElementById('crosshair');
 
 const scene = new THREE.Scene();
 
@@ -59,6 +80,7 @@ document.body.appendChild(renderer.domElement);
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 2));
 
+// WSKAŹNIK MIEJSCA USTAWIENIA TARCZY
 const reticle = new THREE.Mesh(
   new THREE.RingGeometry(0.07, 0.10, 32)
     .rotateX(-Math.PI / 2),
@@ -69,9 +91,24 @@ reticle.matrixAutoUpdate = false;
 reticle.visible = false;
 scene.add(reticle);
 
-
+// TARCZA
 function createTarget() {
   const group = new THREE.Group();
+
+  // Niewidoczna powierzchnia, która umożliwia
+  // wykrywanie trafień również w środku tarczy.
+  const hitArea = new THREE.Mesh(
+    new THREE.CircleGeometry(0.21, 48),
+    new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0.001,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    })
+  );
+
+  hitArea.rotation.x = -Math.PI / 2;
+  group.add(hitArea);
 
   function addRing(radius, thickness, color) {
     const ring = new THREE.Mesh(
@@ -79,10 +116,7 @@ function createTarget() {
       new THREE.MeshBasicMaterial({ color })
     );
 
-    // Ustaw pierścień w tej samej płaszczyźnie
-    // co zielony wskaźnik wykrytej powierzchni.
     ring.rotation.x = -Math.PI / 2;
-
     group.add(ring);
   }
 
@@ -94,11 +128,11 @@ function createTarget() {
   return group;
 }
 
-
 const target = createTarget();
 target.visible = false;
 scene.add(target);
 
+// AR — zachowujemy dotychczasowy sposób uruchamiania.
 const arButton = ARButton.createButton(renderer, {
   requiredFeatures: ['hit-test']
 });
@@ -111,16 +145,98 @@ let hitTestRequested = false;
 const controller = renderer.xr.getController(0);
 scene.add(controller);
 
+// NARZĘDZIA DO STRZELANIA
+const raycaster = new THREE.Raycaster();
+const shotOrigin = new THREE.Vector3();
+const shotDirection = new THREE.Vector3();
+
+let shotCount = 0;
+let marker = null;
+let markerTimer = null;
+
+// OBSŁUGA DOTKNIĘCIA — TEN SAM MECHANIZM CO W DZIAŁAJĄCEJ WERSJI
 controller.addEventListener('select', () => {
-  if (!reticle.visible) return;
+  // Pierwsze dotknięcie umieszcza tarczę.
+  if (!target.visible) {
+    if (!reticle.visible) {
+      status.textContent =
+        'Najpierw skieruj telefon na wykrytą powierzchnię.';
+      return;
+    }
 
-  target.position.setFromMatrixPosition(reticle.matrix);
-  target.quaternion.setFromRotationMatrix(reticle.matrix);
-  target.visible = true;
+    target.position.setFromMatrixPosition(reticle.matrix);
+    target.quaternion.setFromRotationMatrix(reticle.matrix);
+    target.visible = true;
 
-  status.textContent = 'Tarcza umieszczona — AR RANGE';
+    // Wskaźnik miejsca znika, celownik się pojawia.
+    reticle.visible = false;
+    crosshair.style.display = 'block';
+
+    status.textContent = 'Tarcza gotowa — celuj i strzelaj!';
+    status.style.color = '#00ff88';
+    return;
+  }
+
+  // Kolejne dotknięcie oddaje strzał.
+  const xrCamera = renderer.xr.getCamera(camera);
+
+  xrCamera.updateMatrixWorld(true);
+  xrCamera.getWorldPosition(shotOrigin);
+  xrCamera.getWorldDirection(shotDirection);
+
+  raycaster.set(shotOrigin, shotDirection);
+
+  const hits = raycaster.intersectObject(target, true);
+  shotCount++;
+
+  if (hits.length === 0) {
+    status.textContent = 'PUDŁO!  Strzał: ' + shotCount;
+    status.style.color = '#ff7777';
+    return;
+  }
+
+  // Usuń poprzedni znacznik trafienia.
+  if (marker) {
+    scene.remove(marker);
+    marker.geometry.dispose();
+    marker.material.dispose();
+    marker = null;
+  }
+
+  if (markerTimer) {
+    clearTimeout(markerTimer);
+  }
+
+  // Znacznik trafienia.
+  marker = new THREE.Mesh(
+    new THREE.SphereGeometry(0.018, 16, 12),
+    new THREE.MeshBasicMaterial({
+      color: 0xffaa00,
+      depthTest: false
+    })
+  );
+
+  marker.position.copy(hits[0].point);
+  marker.renderOrder = 10;
+  scene.add(marker);
+
+  status.textContent = 'TRAFIENIE!  Strzał: ' + shotCount;
+  status.style.color = '#00ff88';
+
+  const currentMarker = marker;
+
+  markerTimer = setTimeout(() => {
+    scene.remove(currentMarker);
+    currentMarker.geometry.dispose();
+    currentMarker.material.dispose();
+
+    if (marker === currentMarker) {
+      marker = null;
+    }
+  }, 3000);
 });
 
+// PĘTLA AR — zachowujemy mechanizm hit-test.
 renderer.setAnimationLoop((time, frame) => {
   if (frame) {
     const session = renderer.xr.getSession();
@@ -133,27 +249,41 @@ renderer.setAnimationLoop((time, frame) => {
         .then(viewerSpace =>
           session.requestHitTestSource({ space: viewerSpace })
         )
-        .then(source => { hitTestSource = source; })
+        .then(source => {
+          hitTestSource = source;
+        })
         .catch(error => {
-          status.textContent = 'Błąd wykrywania powierzchni: ' + error.message;
+          status.textContent =
+            'Błąd wykrywania powierzchni: ' + error.message;
         });
 
       session.addEventListener('end', () => {
         hitTestRequested = false;
         hitTestSource = null;
+
         target.visible = false;
         reticle.visible = false;
+        crosshair.style.display = 'none';
+
+        shotCount = 0;
+        status.textContent = 'AR RANGE — przygotowanie sceny';
+        status.style.color = 'white';
       });
     }
 
-    if (hitTestSource) {
+    if (hitTestSource && !target.visible) {
       const results = frame.getHitTestResults(hitTestSource);
       reticle.visible = results.length > 0;
 
       if (reticle.visible) {
         const pose = results[0].getPose(referenceSpace);
         reticle.matrix.fromArray(pose.transform.matrix);
+
+        status.textContent = 'Dotknij ekranu, aby umieścić tarczę.';
+        status.style.color = 'white';
       }
+    } else if (target.visible) {
+      reticle.visible = false;
     }
   }
 
