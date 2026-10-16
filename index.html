@@ -1,1 +1,163 @@
 
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AR RANGE</title>
+<style>
+  body {
+    margin: 0;
+    background: #17211b;
+    color: white;
+    font-family: Arial, sans-serif;
+  }
+
+  #status {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 10;
+    padding: 12px;
+    border-radius: 10px;
+    background: #17211bdd;
+    text-align: center;
+  }
+
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<div id="status">AR RANGE — przygotowanie sceny</div>
+
+<script type="module">
+import * as THREE from
+  'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+import { ARButton } from
+  'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/webxr/ARButton.js';
+
+const status = document.getElementById('status');
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(
+  70, window.innerWidth / window.innerHeight, 0.01, 30
+);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha: true
+});
+
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.xr.enabled = true;
+renderer.setClearColor(0x000000, 0);
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 2));
+
+const reticle = new THREE.Mesh(
+  new THREE.RingGeometry(0.07, 0.10, 32)
+    .rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ color: 0x00ff88 })
+);
+
+reticle.matrixAutoUpdate = false;
+reticle.visible = false;
+scene.add(reticle);
+
+function createTarget() {
+  const group = new THREE.Group();
+
+  function addRing(radius, thickness, color) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(radius, thickness, 12, 64),
+      new THREE.MeshBasicMaterial({ color })
+    );
+    group.add(ring);
+  }
+
+  addRing(0.20, 0.012, 0xffffff);
+  addRing(0.15, 0.015, 0xe52b2b);
+  addRing(0.10, 0.012, 0xffffff);
+  addRing(0.05, 0.018, 0xe52b2b);
+
+  return group;
+}
+
+const target = createTarget();
+target.visible = false;
+scene.add(target);
+
+const arButton = ARButton.createButton(renderer, {
+  requiredFeatures: ['hit-test']
+});
+
+document.body.appendChild(arButton);
+
+let hitTestSource = null;
+let hitTestRequested = false;
+
+const controller = renderer.xr.getController(0);
+scene.add(controller);
+
+controller.addEventListener('select', () => {
+  if (!reticle.visible) return;
+
+  target.position.setFromMatrixPosition(reticle.matrix);
+  target.quaternion.setFromRotationMatrix(reticle.matrix);
+  target.visible = true;
+
+  status.textContent = 'Tarcza umieszczona — AR RANGE';
+});
+
+renderer.setAnimationLoop((time, frame) => {
+  if (frame) {
+    const session = renderer.xr.getSession();
+    const referenceSpace = renderer.xr.getReferenceSpace();
+
+    if (!hitTestRequested) {
+      hitTestRequested = true;
+
+      session.requestReferenceSpace('viewer')
+        .then(viewerSpace =>
+          session.requestHitTestSource({ space: viewerSpace })
+        )
+        .then(source => { hitTestSource = source; })
+        .catch(error => {
+          status.textContent = 'Błąd wykrywania powierzchni: ' + error.message;
+        });
+
+      session.addEventListener('end', () => {
+        hitTestRequested = false;
+        hitTestSource = null;
+        target.visible = false;
+        reticle.visible = false;
+      });
+    }
+
+    if (hitTestSource) {
+      const results = frame.getHitTestResults(hitTestSource);
+      reticle.visible = results.length > 0;
+
+      if (reticle.visible) {
+        const pose = results[0].getPose(referenceSpace);
+        reticle.matrix.fromArray(pose.transform.matrix);
+      }
+    }
+  }
+
+  renderer.render(scene, camera);
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
