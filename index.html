@@ -3,16 +3,17 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Range</title>
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+  <title>AR Range Beta 0.2</title>
 
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      font-family: Arial, sans-serif;
       background: #000;
       color: white;
+      font-family: Arial, sans-serif;
     }
 
     canvas {
@@ -27,7 +28,7 @@
       z-index: 10;
       padding: 10px;
       border-radius: 8px;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.82);
       text-align: center;
       font-size: 15px;
       pointer-events: none;
@@ -47,6 +48,49 @@
       pointer-events: none;
     }
 
+    #distanceMenu {
+      display: none;
+      position: fixed;
+      z-index: 20;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(300px, calc(100vw - 40px));
+      padding: 18px;
+      border-radius: 14px;
+      background: rgba(10, 15, 20, 0.96);
+      border: 1px solid #555;
+      text-align: center;
+    }
+
+    #distanceMenu h2 {
+      margin: 0 0 8px;
+      font-size: 21px;
+    }
+
+    #distanceMenu p {
+      color: #ccc;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .distanceButton {
+      display: block;
+      width: 100%;
+      margin-top: 9px;
+      padding: 13px;
+      border: 1px solid #555;
+      border-radius: 8px;
+      background: #202a30;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .distanceButton:active {
+      background: #087f52;
+    }
+
     #scoreboard {
       display: none;
       position: fixed;
@@ -56,7 +100,7 @@
       z-index: 10;
       padding: 10px;
       border-radius: 10px;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.86);
       font-size: 14px;
       pointer-events: none;
     }
@@ -90,12 +134,44 @@
       font-weight: bold;
       color: #00ff88;
     }
+
+    #startButton {
+      display: none;
+      position: fixed;
+      z-index: 20;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      padding: 15px 28px;
+      border: 0;
+      border-radius: 10px;
+      background: #00a96b;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+    }
   </style>
 </head>
 
 <body>
-  <div id="status">AR RANGE — uruchom grę</div>
+  <div id="status">AR RANGE — uruchom AR</div>
   <div id="crosshair">+</div>
+
+  <button id="startButton">START</button>
+
+  <div id="distanceMenu">
+    <h2>Wybierz dystans</h2>
+    <p>
+      Po wyborze skieruj telefon na miejsce,
+      w którym chcesz zawiesić tarczę.
+    </p>
+
+    <button class="distanceButton" data-distance="10">10 metrów</button>
+    <button class="distanceButton" data-distance="15">15 metrów</button>
+    <button class="distanceButton" data-distance="25">25 metrów</button>
+    <button class="distanceButton" data-distance="50">50 metrów</button>
+    <button class="distanceButton" data-distance="100">100 metrów</button>
+  </div>
 
   <div id="scoreboard">
     <h3>Wyniki strzelania</h3>
@@ -121,6 +197,8 @@
 
     const status = document.getElementById('status');
     const crosshair = document.getElementById('crosshair');
+    const distanceMenu = document.getElementById('distanceMenu');
+    const startButton = document.getElementById('startButton');
     const scoreboard = document.getElementById('scoreboard');
     const scoreRows = document.getElementById('scoreRows');
     const totalElement = document.getElementById('total');
@@ -131,7 +209,7 @@
       70,
       window.innerWidth / window.innerHeight,
       0.01,
-      20
+      200
     );
 
     const renderer = new THREE.WebGLRenderer({
@@ -145,31 +223,21 @@
     document.body.appendChild(renderer.domElement);
 
     const arButton = ARButton.createButton(renderer, {
-      requiredFeatures: ['hit-test'],
       optionalFeatures: ['dom-overlay'],
       domOverlay: { root: document.body }
     });
 
     document.body.appendChild(arButton);
 
-    const reticle = new THREE.Mesh(
-      new THREE.RingGeometry(0.06, 0.08, 32),
-      new THREE.MeshBasicMaterial({
-        color: 0x00ff00,
-        side: THREE.DoubleSide
-      })
-    );
-
-    reticle.rotation.x = -Math.PI / 2;
-    reticle.matrixAutoUpdate = false;
-    reticle.visible = false;
-    scene.add(reticle);
+    // Tarcza: zewnętrzny promień 25 cm.
+    // Wymiary stref punktowych co 2,5 cm promienia.
 
     function createTarget() {
       const group = new THREE.Group();
 
+      // Niewidoczna powierzchnia do wykrywania trafień.
       const hitArea = new THREE.Mesh(
-        new THREE.CircleGeometry(0.21, 64),
+        new THREE.CircleGeometry(0.25, 96),
         new THREE.MeshBasicMaterial({
           transparent: true,
           opacity: 0.001,
@@ -178,23 +246,65 @@
         })
       );
 
-      hitArea.rotation.x = -Math.PI / 2;
       group.add(hitArea);
 
-      function addRing(radius, thickness, color) {
+      // Białe tło tarczy.
+      const background = new THREE.Mesh(
+        new THREE.CircleGeometry(0.25, 96),
+        new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          side: THREE.DoubleSide
+        })
+      );
+
+      background.position.z = -0.001;
+      group.add(background);
+
+      // Czarne pole centralne.
+      const blackCenter = new THREE.Mesh(
+        new THREE.CircleGeometry(0.10, 96),
+        new THREE.MeshBasicMaterial({
+          color: 0x111111,
+          side: THREE.DoubleSide
+        })
+      );
+
+      blackCenter.position.z = 0.001;
+      group.add(blackCenter);
+
+      // Dziesięć granic stref punktowych.
+      for (let i = 1; i <= 10; i++) {
+        const radius = i * 0.025;
+
         const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(radius, thickness, 12, 64),
-          new THREE.MeshBasicMaterial({ color })
+          new THREE.RingGeometry(
+            radius - 0.0008,
+            radius + 0.0008,
+            96
+          ),
+          new THREE.MeshBasicMaterial({
+            color: i <= 4 ? 0xffffff : 0x111111,
+            side: THREE.DoubleSide,
+            depthTest: false
+          })
         );
 
-        ring.rotation.x = -Math.PI / 2;
+        ring.position.z = 0.003;
+        ring.renderOrder = 2;
         group.add(ring);
       }
 
-      addRing(0.20, 0.012, 0xffffff);
-      addRing(0.15, 0.015, 0xe52b2b);
-      addRing(0.10, 0.012, 0xffffff);
-      addRing(0.05, 0.018, 0xe52b2b);
+      // Cienki zewnętrzny obrys.
+      const outline = new THREE.Mesh(
+        new THREE.RingGeometry(0.249, 0.251, 96),
+        new THREE.MeshBasicMaterial({
+          color: 0x111111,
+          side: THREE.DoubleSide
+        })
+      );
+
+      outline.position.z = 0.004;
+      group.add(outline);
 
       return group;
     }
@@ -207,16 +317,61 @@
     scene.add(controller);
 
     const raycaster = new THREE.Raycaster();
-    const shotOrigin = new THREE.Vector3();
-    const shotDirection = new THREE.Vector3();
+    const cameraPosition = new THREE.Vector3();
+    const cameraDirection = new THREE.Vector3();
+    const targetPosition = new THREE.Vector3();
+    const targetNormal = new THREE.Vector3();
+    const targetQuaternion = new THREE.Quaternion();
+    const forwardAxis = new THREE.Vector3(0, 0, 1);
 
-    let hitTestSource = null;
-    let hitTestRequested = false;
+    let selectedDistance = 10;
+    let placementPreview = false;
+    let targetPlaced = false;
     let shotCount = 0;
     let totalPoints = 0;
+    let gameFinished = false;
     let marker = null;
     let markerTimer = null;
-    let gameFinished = false;
+
+    function updateTargetPreview() {
+      if (!placementPreview || targetPlaced) return;
+
+      const xrCamera = renderer.xr.getCamera(camera);
+
+      xrCamera.updateMatrixWorld(true);
+      xrCamera.getWorldPosition(cameraPosition);
+      xrCamera.getWorldDirection(cameraDirection);
+
+      // Pozycja tarczy w wybranej odległości od telefonu.
+      targetPosition.copy(cameraPosition).addScaledVector(
+        cameraDirection,
+        selectedDistance
+      );
+
+      // Przód tarczy zwrócony w stronę użytkownika.
+      targetNormal.copy(cameraDirection).negate();
+
+      targetQuaternion.setFromUnitVectors(
+        forwardAxis,
+        targetNormal
+      );
+
+      target.position.copy(targetPosition);
+      target.quaternion.copy(targetQuaternion);
+      target.visible = true;
+    }
+
+    function getPoints(distanceFromCenter) {
+      if (distanceFromCenter > 0.25) return 0;
+
+      // Promień każdej kolejnej strefy zwiększa się o 2,5 cm.
+      const zone = Math.max(
+        1,
+        Math.ceil(distanceFromCenter / 0.025)
+      );
+
+      return Math.max(1, 11 - zone);
+    }
 
     function removeMarker() {
       if (markerTimer) {
@@ -236,7 +391,7 @@
       removeMarker();
 
       marker = new THREE.Mesh(
-        new THREE.SphereGeometry(0.018, 16, 12),
+        new THREE.SphereGeometry(0.012, 12, 10),
         new THREE.MeshBasicMaterial({
           color,
           depthTest: false
@@ -261,14 +416,6 @@
       }, 3000);
     }
 
-    function getPoints(distance) {
-      if (distance <= 0.05) return 10;
-      if (distance <= 0.10) return 8;
-      if (distance <= 0.15) return 6;
-      if (distance <= 0.20) return 4;
-      return 0;
-    }
-
     function addResult(points) {
       shotCount++;
       totalPoints += points;
@@ -289,43 +436,66 @@
       row.appendChild(pointsCell);
 
       scoreRows.appendChild(row);
-      totalElement.textContent = 'Suma: ' + totalPoints + ' / 50';
 
-      scoreboard.style.display = 'block';
+      totalElement.textContent =
+        'Suma: ' + totalPoints + ' / 50';
     }
 
+    startButton.addEventListener('click', () => {
+      startButton.style.display = 'none';
+      distanceMenu.style.display = 'block';
+      status.textContent = 'Wybierz odległość tarczy.';
+    });
+
+    document.querySelectorAll('.distanceButton').forEach(button => {
+      button.addEventListener('click', () => {
+        selectedDistance = Number(button.dataset.distance);
+
+        distanceMenu.style.display = 'none';
+        placementPreview = true;
+        targetPlaced = false;
+
+        crosshair.style.display = 'block';
+        scoreboard.style.display = 'none';
+
+        status.textContent =
+          'Tarcza ' + selectedDistance +
+          ' m — wyceluj w miejsce i dotknij ekranu, aby zawiesić.';
+
+        status.style.color = '#00ff88';
+      });
+    });
+
     controller.addEventListener('select', () => {
-      // Pierwsze dotknięcie umieszcza tarczę.
-      if (!target.visible) {
-        if (!reticle.visible) {
-          status.textContent =
-            'Najpierw skieruj telefon na wykrytą powierzchnię.';
-          return;
-        }
+      // Zatwierdzenie położenia tarczy.
+      if (placementPreview && !targetPlaced) {
+        updateTargetPreview();
 
-        target.position.setFromMatrixPosition(reticle.matrix);
-        target.quaternion.setFromRotationMatrix(reticle.matrix);
-        target.visible = true;
+        targetPlaced = true;
+        placementPreview = false;
 
-        reticle.visible = false;
         crosshair.style.display = 'block';
         scoreboard.style.display = 'block';
 
-        status.textContent = 'Tarcza gotowa — oddaj 5 strzałów!';
+        status.textContent =
+          'Tarcza zawieszona na ' + selectedDistance +
+          ' m. Oddaj 5 strzałów!';
+
         status.style.color = '#00ff88';
         return;
       }
 
-      if (gameFinished || shotCount >= 5) {
+      if (!targetPlaced || gameFinished || shotCount >= 5) {
         return;
       }
 
       const xrCamera = renderer.xr.getCamera(camera);
-      xrCamera.updateMatrixWorld(true);
-      xrCamera.getWorldPosition(shotOrigin);
-      xrCamera.getWorldDirection(shotDirection);
 
-      raycaster.set(shotOrigin, shotDirection);
+      xrCamera.updateMatrixWorld(true);
+      xrCamera.getWorldPosition(cameraPosition);
+      xrCamera.getWorldDirection(cameraDirection);
+
+      raycaster.set(cameraPosition, cameraDirection);
 
       const hits = raycaster.intersectObject(target, true);
       let points = 0;
@@ -334,13 +504,13 @@
         const hitPoint = hits[0].point.clone();
         const localPoint = target.worldToLocal(hitPoint.clone());
 
-        // Tarcza leży w płaszczyźnie XZ grupy.
-        const distance = Math.sqrt(
+        // Tarcza leży w lokalnej płaszczyźnie XY.
+        const distanceFromCenter = Math.sqrt(
           localPoint.x * localPoint.x +
-          localPoint.z * localPoint.z
+          localPoint.y * localPoint.y
         );
 
-        points = getPoints(distance);
+        points = getPoints(distanceFromCenter);
 
         if (points > 0) {
           showMarker(hitPoint, 0xffaa00);
@@ -350,7 +520,8 @@
           ? 'TRAFIENIE! ' + points + ' pkt.'
           : 'PUDŁO! 0 pkt.';
 
-        status.style.color = points > 0 ? '#00ff88' : '#ff7777';
+        status.style.color =
+          points > 0 ? '#00ff88' : '#ff7777';
       } else {
         status.textContent = 'PUDŁO! 0 pkt.';
         status.style.color = '#ff7777';
@@ -366,60 +537,45 @@
         status.style.color = '#00ff88';
         crosshair.style.display = 'none';
       } else {
-        status.textContent += '  Strzał ' + shotCount + ' / 5';
+        status.textContent +=
+          '  Strzał ' + shotCount + ' / 5';
       }
     });
 
     renderer.xr.addEventListener('sessionstart', () => {
-      hitTestRequested = false;
-      hitTestSource = null;
-      status.textContent = 'Szukam powierzchni dla tarczy...';
+      target.visible = false;
+      targetPlaced = false;
+      placementPreview = false;
+      gameFinished = false;
+      shotCount = 0;
+      totalPoints = 0;
+
+      removeMarker();
+
+      scoreRows.replaceChildren();
+      totalElement.textContent = 'Suma: 0 / 50';
+
+      crosshair.style.display = 'none';
+      scoreboard.style.display = 'none';
+      distanceMenu.style.display = 'none';
+      startButton.style.display = 'block';
+
+      status.textContent = 'AR uruchomiony — naciśnij START.';
+      status.style.color = '#ffffff';
     });
 
     renderer.xr.addEventListener('sessionend', () => {
-      hitTestSource = null;
-      hitTestRequested = false;
+      target.visible = false;
+      targetPlaced = false;
+      placementPreview = false;
+      distanceMenu.style.display = 'none';
+      startButton.style.display = 'none';
+      crosshair.style.display = 'none';
+      scoreboard.style.display = 'none';
     });
 
-    renderer.setAnimationLoop(async (timestamp, frame) => {
-      if (frame) {
-        const session = renderer.xr.getSession();
-
-        if (session && !hitTestRequested) {
-          hitTestRequested = true;
-
-          try {
-            const viewerSpace =
-              await session.requestReferenceSpace('viewer');
-
-            hitTestSource =
-              await session.requestHitTestSource({
-                space: viewerSpace
-              });
-          } catch (error) {
-            status.textContent = 'Nie udało się uruchomić AR.';
-            console.error(error);
-          }
-        }
-
-        if (frame && hitTestSource && !target.visible) {
-          const referenceSpace = renderer.xr.getReferenceSpace();
-          const hitTestResults = frame.getHitTestResults(hitTestSource);
-
-          if (hitTestResults.length > 0) {
-            const hit = hitTestResults[0];
-            const pose = hit.getPose(referenceSpace);
-
-            reticle.visible = true;
-            reticle.matrix.fromArray(pose.transform.matrix);
-          } else {
-            reticle.visible = false;
-          }
-        } else if (target.visible) {
-          reticle.visible = false;
-        }
-      }
-
+    renderer.setAnimationLoop(() => {
+      updateTargetPreview();
       renderer.render(scene, camera);
     });
 
