@@ -33,18 +33,56 @@
       pointer-events: none;
     }
 
+    /* Klasyczne czarne przyrządy pistoletowe */
     #crosshair {
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       z-index: 10;
-      font-size: 32px;
-      font-weight: bold;
-      color: #00ff88;
-      text-shadow: 0 0 4px black;
+      width: 76px;
+      height: 36px;
       display: none;
       pointer-events: none;
+    }
+
+    /* Szczerbinka: dwa boczne słupki */
+    #crosshair::before,
+    #crosshair::after {
+      content: "";
+      position: absolute;
+      top: 9px;
+      width: 8px;
+      height: 27px;
+      background: #111;
+      border: 1px solid #555;
+      box-sizing: border-box;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+    }
+
+    #crosshair::before {
+      left: 0;
+      border-radius: 1px 1px 0 0;
+    }
+
+    #crosshair::after {
+      right: 0;
+      border-radius: 1px 1px 0 0;
+    }
+
+    /* Muszka: cienki, centralny słupek */
+    #frontSight {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 22px;
+      background: #111;
+      border-left: 1px solid #555;
+      border-right: 1px solid #555;
+      box-sizing: border-box;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
     }
 
     #distanceMenu {
@@ -138,7 +176,10 @@
 
 <body>
   <div id="status">AR RANGE — uruchamianie</div>
-  <div id="crosshair">+</div>
+
+  <div id="crosshair" aria-hidden="true">
+    <div id="frontSight"></div>
+  </div>
 
   <div id="distanceMenu">
     <h2>Wybierz dystans</h2>
@@ -426,8 +467,6 @@
         target.visible = true;
         crosshair.style.display = 'block';
 
-        // Zapobiega przypadkowemu zawieszeniu tarczy
-        // przez to samo dotknięcie, którym wybrano dystans.
         placementAllowedAt = Date.now() + 500;
 
         status.textContent =
