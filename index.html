@@ -3,8 +3,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AR Range Beta 0.2</title>
 
   <style>
@@ -134,37 +133,16 @@
       font-weight: bold;
       color: #00ff88;
     }
-
-    #startButton {
-      display: none;
-      position: fixed;
-      z-index: 20;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      padding: 15px 28px;
-      border: 0;
-      border-radius: 10px;
-      background: #00a96b;
-      color: white;
-      font-size: 18px;
-      font-weight: bold;
-    }
   </style>
 </head>
 
 <body>
-  <div id="status">AR RANGE — uruchom AR</div>
+  <div id="status">AR RANGE — uruchamianie</div>
   <div id="crosshair">+</div>
-
-  <button id="startButton">START</button>
 
   <div id="distanceMenu">
     <h2>Wybierz dystans</h2>
-    <p>
-      Po wyborze skieruj telefon na miejsce,
-      w którym chcesz zawiesić tarczę.
-    </p>
+    <p>Wybierz odległość, a następnie skieruj telefon tam, gdzie chcesz zawiesić tarczę.</p>
 
     <button class="distanceButton" data-distance="10">10 metrów</button>
     <button class="distanceButton" data-distance="15">15 metrów</button>
@@ -198,7 +176,6 @@
     const status = document.getElementById('status');
     const crosshair = document.getElementById('crosshair');
     const distanceMenu = document.getElementById('distanceMenu');
-    const startButton = document.getElementById('startButton');
     const scoreboard = document.getElementById('scoreboard');
     const scoreRows = document.getElementById('scoreRows');
     const totalElement = document.getElementById('total');
@@ -229,13 +206,9 @@
 
     document.body.appendChild(arButton);
 
-    // Tarcza: zewnętrzny promień 25 cm.
-    // Wymiary stref punktowych co 2,5 cm promienia.
-
     function createTarget() {
       const group = new THREE.Group();
 
-      // Niewidoczna powierzchnia do wykrywania trafień.
       const hitArea = new THREE.Mesh(
         new THREE.CircleGeometry(0.25, 96),
         new THREE.MeshBasicMaterial({
@@ -248,7 +221,6 @@
 
       group.add(hitArea);
 
-      // Białe tło tarczy.
       const background = new THREE.Mesh(
         new THREE.CircleGeometry(0.25, 96),
         new THREE.MeshBasicMaterial({
@@ -260,7 +232,6 @@
       background.position.z = -0.001;
       group.add(background);
 
-      // Czarne pole centralne.
       const blackCenter = new THREE.Mesh(
         new THREE.CircleGeometry(0.10, 96),
         new THREE.MeshBasicMaterial({
@@ -272,7 +243,6 @@
       blackCenter.position.z = 0.001;
       group.add(blackCenter);
 
-      // Dziesięć granic stref punktowych.
       for (let i = 1; i <= 10; i++) {
         const radius = i * 0.025;
 
@@ -294,7 +264,6 @@
         group.add(ring);
       }
 
-      // Cienki zewnętrzny obrys.
       const outline = new THREE.Mesh(
         new THREE.RingGeometry(0.249, 0.251, 96),
         new THREE.MeshBasicMaterial({
@@ -332,6 +301,7 @@
     let gameFinished = false;
     let marker = null;
     let markerTimer = null;
+    let placementAllowedAt = 0;
 
     function updateTargetPreview() {
       if (!placementPreview || targetPlaced) return;
@@ -342,13 +312,11 @@
       xrCamera.getWorldPosition(cameraPosition);
       xrCamera.getWorldDirection(cameraDirection);
 
-      // Pozycja tarczy w wybranej odległości od telefonu.
       targetPosition.copy(cameraPosition).addScaledVector(
         cameraDirection,
         selectedDistance
       );
 
-      // Przód tarczy zwrócony w stronę użytkownika.
       targetNormal.copy(cameraDirection).negate();
 
       targetQuaternion.setFromUnitVectors(
@@ -364,7 +332,6 @@
     function getPoints(distanceFromCenter) {
       if (distanceFromCenter > 0.25) return 0;
 
-      // Promień każdej kolejnej strefy zwiększa się o 2,5 cm.
       const zone = Math.max(
         1,
         Math.ceil(distanceFromCenter / 0.025)
@@ -387,13 +354,13 @@
       }
     }
 
-    function showMarker(point, color) {
+    function showMarker(point) {
       removeMarker();
 
       marker = new THREE.Mesh(
         new THREE.SphereGeometry(0.012, 12, 10),
         new THREE.MeshBasicMaterial({
-          color,
+          color: 0xffaa00,
           depthTest: false
         })
       );
@@ -436,45 +403,50 @@
       row.appendChild(pointsCell);
 
       scoreRows.appendChild(row);
-
-      totalElement.textContent =
-        'Suma: ' + totalPoints + ' / 50';
+      totalElement.textContent = 'Suma: ' + totalPoints + ' / 50';
     }
-
-    startButton.addEventListener('click', () => {
-      startButton.style.display = 'none';
-      distanceMenu.style.display = 'block';
-      status.textContent = 'Wybierz odległość tarczy.';
-    });
 
     document.querySelectorAll('.distanceButton').forEach(button => {
       button.addEventListener('click', () => {
         selectedDistance = Number(button.dataset.distance);
 
         distanceMenu.style.display = 'none';
-        placementPreview = true;
-        targetPlaced = false;
-
-        crosshair.style.display = 'block';
         scoreboard.style.display = 'none';
 
+        shotCount = 0;
+        totalPoints = 0;
+        gameFinished = false;
+        targetPlaced = false;
+        placementPreview = true;
+
+        removeMarker();
+        scoreRows.replaceChildren();
+        totalElement.textContent = 'Suma: 0 / 50';
+
+        target.visible = true;
+        crosshair.style.display = 'block';
+
+        // Zapobiega przypadkowemu zawieszeniu tarczy
+        // przez to samo dotknięcie, którym wybrano dystans.
+        placementAllowedAt = Date.now() + 500;
+
         status.textContent =
-          'Tarcza ' + selectedDistance +
-          ' m — wyceluj w miejsce i dotknij ekranu, aby zawiesić.';
+          'Podgląd tarczy: ' + selectedDistance +
+          ' m. Wyceluj w miejsce i dotknij, aby zawiesić.';
 
         status.style.color = '#00ff88';
       });
     });
 
     controller.addEventListener('select', () => {
-      // Zatwierdzenie położenia tarczy.
       if (placementPreview && !targetPlaced) {
+        if (Date.now() < placementAllowedAt) return;
+
         updateTargetPreview();
 
         targetPlaced = true;
         placementPreview = false;
 
-        crosshair.style.display = 'block';
         scoreboard.style.display = 'block';
 
         status.textContent =
@@ -504,7 +476,6 @@
         const hitPoint = hits[0].point.clone();
         const localPoint = target.worldToLocal(hitPoint.clone());
 
-        // Tarcza leży w lokalnej płaszczyźnie XY.
         const distanceFromCenter = Math.sqrt(
           localPoint.x * localPoint.x +
           localPoint.y * localPoint.y
@@ -513,7 +484,7 @@
         points = getPoints(distanceFromCenter);
 
         if (points > 0) {
-          showMarker(hitPoint, 0xffaa00);
+          showMarker(hitPoint);
         }
 
         status.textContent = points > 0
@@ -532,8 +503,10 @@
 
       if (shotCount === 5) {
         gameFinished = true;
+
         status.textContent =
           'KONIEC! Wynik: ' + totalPoints + ' / 50';
+
         status.style.color = '#00ff88';
         crosshair.style.display = 'none';
       } else {
@@ -551,16 +524,15 @@
       totalPoints = 0;
 
       removeMarker();
-
       scoreRows.replaceChildren();
       totalElement.textContent = 'Suma: 0 / 50';
 
       crosshair.style.display = 'none';
       scoreboard.style.display = 'none';
-      distanceMenu.style.display = 'none';
-      startButton.style.display = 'block';
 
-      status.textContent = 'AR uruchomiony — naciśnij START.';
+      distanceMenu.style.display = 'block';
+
+      status.textContent = 'Wybierz dystans tarczy.';
       status.style.color = '#ffffff';
     });
 
@@ -568,8 +540,8 @@
       target.visible = false;
       targetPlaced = false;
       placementPreview = false;
+
       distanceMenu.style.display = 'none';
-      startButton.style.display = 'none';
       crosshair.style.display = 'none';
       scoreboard.style.display = 'none';
     });
