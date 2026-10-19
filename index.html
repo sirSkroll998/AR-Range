@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Range Beta 0.4</title>
+  <title>AR Range Beta 0.5</title>
 
   <style>
     body {
@@ -156,6 +156,7 @@
     ];
 
     const MIN_GESTURE_LENGTH = 80;
+    const PLACEMENT_COOLDOWN = 500;
 
     // Maksymalny dodatkowy błąd poziomy podczas strzału.
     const HORIZONTAL_DEAD_ZONE = 0.02;
@@ -230,7 +231,6 @@
     function createTarget(type) {
       const group = new THREE.Group();
 
-      // Niewidoczna powierzchnia pomocnicza.
       const hitArea = new THREE.Mesh(
         new THREE.CircleGeometry(0.25, 96),
         new THREE.MeshBasicMaterial({
@@ -244,7 +244,6 @@
       group.add(hitArea);
 
       if (type === 'sport') {
-        // Klasyczna tarcza sportowa.
         addDisc(group, 0.25, 0xffffff, -0.001);
         addDisc(group, 0.10, 0x111111, 0.001);
 
@@ -259,8 +258,6 @@
       }
 
       if (type === 'precision') {
-        // Jasna tarcza z wyraźnymi czarnymi pierścieniami
-        // i małym czerwonym środkiem.
         addDisc(group, 0.25, 0xffffff, -0.001);
 
         for (let i = 1; i <= 10; i++) {
@@ -272,7 +269,6 @@
       }
 
       if (type === 'reactive') {
-        // Kolorowa tarcza treningowa z czytelnymi strefami.
         addDisc(group, 0.25, 0x252a30, -0.001);
         addDisc(group, 0.20, 0xffffff, 0.001);
         addDisc(group, 0.15, 0x24a148, 0.002);
@@ -332,7 +328,11 @@
     let gameFinished = false;
     let marker = null;
     let markerTimer = null;
+
+    // Do tego czasu zdarzenie select nie może zawiesić tarczy.
     let placementAllowedAt = 0;
+
+    // Przechowuje gest od dotknięcia do puszczenia palca.
     let activeGesture = null;
 
     function updateStatusForPreparation(message = '') {
@@ -387,9 +387,13 @@
         (selectedTargetIndex + direction + TARGET_TYPES.length) %
         TARGET_TYPES.length;
 
+      // Zmiana ustawień uruchamia blokadę zawieszania.
+      placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
+
       replaceTarget();
+
       updateStatusForPreparation(
-        'zmiana tarczy — dotknij, aby zawiesić'
+        'zmiana tarczy — dotknij ponownie, aby zawiesić'
       );
     }
 
@@ -404,8 +408,11 @@
 
       selectedDistance = DISTANCES[index];
 
+      // Każda zmiana dystansu wymaga osobnego dotknięcia.
+      placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
+
       updateStatusForPreparation(
-        'zmiana dystansu — dotknij, aby zawiesić'
+        'zmiana dystansu — dotknij ponownie, aby zawiesić'
       );
     }
 
@@ -588,15 +595,14 @@
 
     function handlePointerDown(event) {
       if (event.pointerType !== 'touch') return;
-
       if (gameFinished || shotCount >= 5) return;
 
       const x = event.clientX / window.innerWidth;
       const y = event.clientY / window.innerHeight;
 
       if (targetPlaced) {
-        // Po zawieszeniu tarczy gest strzału musi zaczynać
-        // się w dolnej, środkowej części ekranu.
+        // Gest strzału rozpoczyna się w dolnej,
+        // środkowej części ekranu.
         if (
           x < TRIGGER_MIN_X ||
           x > TRIGGER_MAX_X ||
@@ -654,14 +660,19 @@
       if (length < MIN_GESTURE_LENGTH) return;
 
       if (!targetPlaced) {
-        // FAZA PRZYGOTOWANIA
+        // KLUCZOWA POPRAWKA:
+        // Każdy dłuższy gest w fazie przygotowania uruchamia
+        // półsekundową blokadę zawieszenia tarczy.
+        // Chroni to również przed opóźnionym zdarzeniem select.
+        placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
+
         // Wyraźnie poziomy gest zmienia rodzaj tarczy.
-        // Wyraźnie pionowy gest zmienia dystans.
         if (Math.abs(dx) > Math.abs(dy) * 1.2) {
           changeTarget(dx > 0 ? 1 : -1);
           return;
         }
 
+        // Wyraźnie pionowy gest zmienia dystans.
         if (Math.abs(dy) > Math.abs(dx) * 1.2) {
           // W górę: większy dystans.
           // W dół: mniejszy dystans.
@@ -676,7 +687,7 @@
         return;
       }
 
-      // FAZA STRZELANIA
+      // FAZA STRZELANIA:
       // Tylko gest skierowany w dół oddaje strzał.
       if (dy <= 0) return;
 
@@ -704,8 +715,14 @@
     });
 
     controller.addEventListener('select', () => {
-      // Dotknięcie zawiesza tarczę tylko w fazie przygotowania.
+      // Zawieszenie jest możliwe wyłącznie podczas przygotowania.
       if (!placementPreview || targetPlaced) return;
+
+      // Nie reaguj, gdy palec nadal wykonuje gest.
+      if (activeGesture !== null) return;
+
+      // Nie pozwól, aby ten sam gest zmienił ustawienia
+      // i jednocześnie zawiesił tarczę.
       if (Date.now() < placementAllowedAt) return;
 
       updateTargetPreview();
@@ -746,7 +763,7 @@
       crosshair.style.display = 'block';
       scoreboard.style.display = 'none';
 
-      placementAllowedAt = Date.now() + 500;
+      placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
       updateStatusForPreparation(
         'przesuń poziomo: tarcza · pionowo: dystans'
