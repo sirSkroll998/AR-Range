@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Range Beta 0.11</title>
+  <title>AR Range Beta 0.12</title>
 
   <script type="importmap">
   {
@@ -47,8 +48,8 @@
 
     #crosshair {
       position: fixed;
-      top: 50%;
-      left: 50%;
+      top: calc(50% + var(--crosshair-screen-y, 0px));
+      left: calc(50% + var(--crosshair-screen-x, 0px));
       transform: translate(-50%,-50%);
       z-index: 10;
       width: 24px;
@@ -57,7 +58,6 @@
       pointer-events: none;
     }
 
-    /* CROSS — klasyczny krzyż */
     #crosshair::before {
       content: "";
       position: absolute;
@@ -80,7 +80,6 @@
       box-shadow: 0 0 1px #000, 0 0 2px #000;
     }
 
-    /* DOT — pojedynczy punkt */
     #crosshair.dot {
       width: 7px;
       height: 7px;
@@ -206,7 +205,8 @@
 
     .devMenuButton:active,
     .devButtons button:active,
-    .fineButton:active {
+    .fineButton:active,
+    .aimFineButton:active {
       background: rgba(0,90,55,.9);
     }
 
@@ -269,7 +269,8 @@
       touch-action: pan-y;
     }
 
-    .fineButton {
+    .fineButton,
+    .aimFineButton {
       flex: 0 0 39px;
       width: 39px;
       height: 35px;
@@ -307,7 +308,6 @@
       background: rgba(35,39,43,.75);
     }
 
-    /* Opcje wyboru celownika */
     .crosshairOption {
       display: flex;
       align-items: center;
@@ -334,9 +334,7 @@
       flex-shrink: 0;
     }
 
-    .crosshairOption span {
-      flex: 1;
-    }
+    .crosshairOption span { flex: 1; }
 
     .crosshairPreview {
       width: 34px;
@@ -384,7 +382,7 @@
       border-radius: 5px;
     }
 
-    #devMessage {
+    .devMessage {
       min-height: 18px;
       margin-top: 10px;
       color: #baffd9;
@@ -439,7 +437,7 @@
       <button id="openCrosshairSettings" class="devMenuButton" type="button">
         🎯 CROSSHAIR
         <div style="font-size:11px;font-weight:normal;color:#c8d8d0;margin-top:4px">
-          Wybór celownika: CROSS, DOT lub BLANK
+          Wygląd, przesunięcie celownika i punktu trafienia
         </div>
       </button>
     </div>
@@ -460,9 +458,9 @@
             <span class="devValue" id="weaponXValue">0.160 m</span>
           </label>
           <div class="rangeRow">
-            <button class="fineButton" type="button" data-setting="x" data-dir="-1" aria-label="Zmniejsz X">−</button>
+            <button class="fineButton" type="button" data-setting="x" data-dir="-1">−</button>
             <input id="weaponX" type="range" min="-0.50" max="0.50" step="0.001" value="0.16">
-            <button class="fineButton" type="button" data-setting="x" data-dir="1" aria-label="Zwiększ X">+</button>
+            <button class="fineButton" type="button" data-setting="x" data-dir="1">+</button>
           </div>
         </div>
 
@@ -472,9 +470,9 @@
             <span class="devValue" id="weaponYValue">-0.160 m</span>
           </label>
           <div class="rangeRow">
-            <button class="fineButton" type="button" data-setting="y" data-dir="-1" aria-label="Zmniejsz Y">−</button>
+            <button class="fineButton" type="button" data-setting="y" data-dir="-1">−</button>
             <input id="weaponY" type="range" min="-0.50" max="0.30" step="0.001" value="-0.16">
-            <button class="fineButton" type="button" data-setting="y" data-dir="1" aria-label="Zwiększ Y">+</button>
+            <button class="fineButton" type="button" data-setting="y" data-dir="1">+</button>
           </div>
         </div>
 
@@ -484,9 +482,9 @@
             <span class="devValue" id="weaponZValue">-0.420 m</span>
           </label>
           <div class="rangeRow">
-            <button class="fineButton" type="button" data-setting="z" data-dir="-1" aria-label="Zmniejsz Z">−</button>
+            <button class="fineButton" type="button" data-setting="z" data-dir="-1">−</button>
             <input id="weaponZ" type="range" min="-1.00" max="-0.10" step="0.001" value="-0.42">
-            <button class="fineButton" type="button" data-setting="z" data-dir="1" aria-label="Zwiększ Z">+</button>
+            <button class="fineButton" type="button" data-setting="z" data-dir="1">+</button>
           </div>
         </div>
       </div>
@@ -540,14 +538,14 @@
         <button id="backToDevMenu" class="secondary" type="button">Wróć do menu</button>
       </div>
 
-      <div id="devMessage">Oczekiwanie na załadowanie Glocka…</div>
+      <div id="devMessage" class="devMessage">Oczekiwanie na załadowanie Glocka…</div>
     </div>
 
     <div id="crosshairSettingsView">
       <h2>Crosshair</h2>
       <p class="devIntro">
-        Wybierz wygląd celownika. Zmiana jest widoczna od razu.
-        Przycisk zapisu zachowa wybrany wariant.
+        Przesunięcie celownika zmienia również kierunek strzału.
+        Ustawienie działa niezależnie od położenia modelu Glocka.
       </p>
 
       <div class="devSection">
@@ -567,13 +565,54 @@
 
         <label class="crosshairOption">
           <input type="radio" name="crosshairMode" value="blank">
-          <span><strong>BLANK</strong><br><small>Bez celownika</small></span>
+          <span><strong>BLANK</strong><br><small>Bez widocznego celownika</small></span>
           <div class="crosshairPreview previewBlank"></div>
         </label>
       </div>
 
+      <div class="devSection">
+        <h3>Przesunięcie punktu celowania</h3>
+        <p class="devIntro">
+          Wartości podawane są w stopniach. Krok regulacji wynosi 0,001°.
+          Wartość dodatnia X przesuwa celownik w prawo, a dodatnia Y w górę.
+        </p>
+
+        <div class="devControl">
+          <label for="aimX">
+            <span>X — lewo / prawo</span>
+            <span class="devValue" id="aimXValue">0.000°</span>
+          </label>
+          <div class="rangeRow">
+            <button class="aimFineButton" type="button" data-aim-setting="x" data-dir="-1" aria-label="Zmniejsz przesunięcie X">−</button>
+            <input id="aimX" type="range" min="-5" max="5" step="0.001" value="0">
+            <button class="aimFineButton" type="button" data-aim-setting="x" data-dir="1" aria-label="Zwiększ przesunięcie X">+</button>
+          </div>
+        </div>
+
+        <div class="devControl">
+          <label for="aimY">
+            <span>Y — dół / góra</span>
+            <span class="devValue" id="aimYValue">0.000°</span>
+          </label>
+          <div class="rangeRow">
+            <button class="aimFineButton" type="button" data-aim-setting="y" data-dir="-1" aria-label="Zmniejsz przesunięcie Y">−</button>
+            <input id="aimY" type="range" min="-5" max="5" step="0.001" value="0">
+            <button class="aimFineButton" type="button" data-aim-setting="y" data-dir="1" aria-label="Zwiększ przesunięcie Y">+</button>
+          </div>
+        </div>
+
+        <div class="devButtons">
+          <button id="saveAimSettings" type="button">Zapisz X/Y</button>
+          <button id="resetAimSettings" class="secondary" type="button">Reset X/Y</button>
+        </div>
+
+        <div id="aimMessage" class="devMessage">
+          Przesunięcie jest neutralne: X = 0°, Y = 0°.
+        </div>
+      </div>
+
       <div class="devButtons">
-        <button id="saveCrosshairSettings" type="button">Zapisz zmiany</button>
+        <button id="saveCrosshairSettings" type="button">Zapisz wygląd</button>
         <button id="backFromCrosshair" class="secondary" type="button">Wróć do menu</button>
       </div>
 
@@ -603,6 +642,7 @@
     const crosshairSettingsView = document.getElementById('crosshairSettingsView');
     const devMessage = document.getElementById('devMessage');
     const crosshairMessage = document.getElementById('crosshairMessage');
+    const aimMessage = document.getElementById('aimMessage');
 
     const DISTANCES = [1, 5, 10, 15, 25, 50, 100];
 
@@ -687,7 +727,7 @@
 
         crosshairMessage.textContent =
           'Podgląd: ' + pendingCrosshairMode.toUpperCase() +
-          '. Kliknij „Zapisz zmiany”, aby zachować wybór.';
+          '. Kliknij „Zapisz wygląd”, aby zachować wybór.';
       });
     });
 
@@ -704,6 +744,145 @@
           'Nie udało się zapisać ustawienia w pamięci przeglądarki.';
         console.warn('Zapis ustawienia celownika nie powiódł się:', error);
       }
+    });
+
+    // =====================================================
+    // NOWOŚĆ BETA 0.12 — PRZESUNIĘCIE CELOWANIA X/Y
+    // Wartości w stopniach. To samo ustawienie steruje
+    // grafiką na ekranie oraz kierunkiem strzału.
+    // =====================================================
+
+    const AIM_STORAGE_KEY = 'arRangeAimOffsetV012';
+
+    const DEFAULT_AIM_SETTINGS = {
+      x: 0,
+      y: 0
+    };
+
+    function loadAimSettings() {
+      try {
+        const saved = localStorage.getItem(AIM_STORAGE_KEY);
+        if (!saved) return { ...DEFAULT_AIM_SETTINGS };
+
+        const parsed = JSON.parse(saved);
+
+        return {
+          x: Number.isFinite(parsed.x)
+            ? THREE.MathUtils.clamp(parsed.x, -5, 5)
+            : 0,
+          y: Number.isFinite(parsed.y)
+            ? THREE.MathUtils.clamp(parsed.y, -5, 5)
+            : 0
+        };
+      } catch (error) {
+        console.warn('Nie udało się odczytać przesunięcia celowania:', error);
+        return { ...DEFAULT_AIM_SETTINGS };
+      }
+    }
+
+    let aimSettings = loadAimSettings();
+
+    const aimInputs = {
+      x: document.getElementById('aimX'),
+      y: document.getElementById('aimY')
+    };
+
+    const aimOutputs = {
+      x: document.getElementById('aimXValue'),
+      y: document.getElementById('aimYValue')
+    };
+
+    function formatAngle(value) {
+      return value.toFixed(3) + '°';
+    }
+
+    // Położenie graficznego celownika na ekranie obliczamy
+    // z tych samych kątów, których używa kierunek strzału.
+    function updateCrosshairScreenPosition() {
+      const focalLength =
+        window.innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+
+      const xRadians = THREE.MathUtils.degToRad(aimSettings.x);
+      const yRadians = THREE.MathUtils.degToRad(aimSettings.y);
+
+      const screenX = Math.tan(xRadians) * focalLength;
+      const screenY = -Math.tan(yRadians) * focalLength;
+
+      crosshair.style.setProperty('--crosshair-screen-x', screenX + 'px');
+      crosshair.style.setProperty('--crosshair-screen-y', screenY + 'px');
+    }
+
+    function refreshAimControls() {
+      for (const key of ['x', 'y']) {
+        aimInputs[key].value = String(aimSettings[key]);
+        aimOutputs[key].textContent = formatAngle(aimSettings[key]);
+      }
+
+      updateCrosshairScreenPosition();
+    }
+
+    function updateAimSetting(key, value) {
+      const input = aimInputs[key];
+      const min = Number(input.min);
+      const max = Number(input.max);
+      const step = Number(input.step);
+      const decimals = (String(step).split('.')[1] || '').length;
+
+      const clamped = THREE.MathUtils.clamp(value, min, max);
+      const rounded = Number(
+        (Math.round(clamped / step) * step).toFixed(decimals)
+      );
+
+      aimSettings[key] = THREE.MathUtils.clamp(rounded, min, max);
+
+      input.value = String(aimSettings[key]);
+      aimOutputs[key].textContent = formatAngle(aimSettings[key]);
+
+      updateCrosshairScreenPosition();
+
+      aimMessage.textContent =
+        'Podgląd na żywo — X: ' + formatAngle(aimSettings.x) +
+        ', Y: ' + formatAngle(aimSettings.y) +
+        '. Zapisz, aby zachować ustawienia.';
+    }
+
+    for (const key of ['x', 'y']) {
+      aimInputs[key].addEventListener('input', () => {
+        updateAimSetting(key, Number(aimInputs[key].value));
+      });
+    }
+
+    // Osobna klasa przycisków zapobiega kolizji
+    // z regulacją położenia modelu Glocka.
+    document.querySelectorAll('.aimFineButton').forEach(button => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.aimSetting;
+        const direction = Number(button.dataset.dir);
+        const step = Number(aimInputs[key].step);
+
+        updateAimSetting(key, aimSettings[key] + direction * step);
+      });
+    });
+
+    document.getElementById('saveAimSettings').addEventListener('click', () => {
+      try {
+        localStorage.setItem(AIM_STORAGE_KEY, JSON.stringify(aimSettings));
+        aimMessage.textContent =
+          'Zapisano X: ' + formatAngle(aimSettings.x) +
+          ', Y: ' + formatAngle(aimSettings.y) + '.';
+      } catch (error) {
+        aimMessage.textContent =
+          'Nie udało się zapisać ustawień w pamięci przeglądarki.';
+        console.warn('Zapis przesunięcia celowania nie powiódł się:', error);
+      }
+    });
+
+    document.getElementById('resetAimSettings').addEventListener('click', () => {
+      aimSettings = { ...DEFAULT_AIM_SETTINGS };
+      refreshAimControls();
+
+      aimMessage.textContent =
+        'Przywrócono ustawienia neutralne: X = 0°, Y = 0°. Zapisz, aby je zachować.';
     });
 
     // =====================================================
@@ -904,9 +1083,15 @@
 
       pendingCrosshairMode = crosshairMode;
       refreshCrosshairOptions();
+      refreshAimControls();
       applyCrosshairMode();
+
       crosshairMessage.textContent =
         'Aktualnie zapisany wariant: ' + crosshairMode.toUpperCase() + '.';
+
+      aimMessage.textContent =
+        'Aktualne X: ' + formatAngle(aimSettings.x) +
+        ', Y: ' + formatAngle(aimSettings.y) + '.';
     }
 
     devToggle.addEventListener('click', () => {
@@ -929,6 +1114,7 @@
       .addEventListener('click', showDevHome);
 
     refreshWeaponControls();
+    refreshAimControls();
     applyCrosshairMode(crosshairMode);
 
     gltfLoader.load(
@@ -1083,6 +1269,7 @@
     const targetPosition = new THREE.Vector3();
     const targetNormal = new THREE.Vector3();
     const targetQuaternion = new THREE.Quaternion();
+    const cameraWorldQuaternion = new THREE.Quaternion();
     const forwardAxis = new THREE.Vector3(0, 0, 1);
     const targetPlane = new THREE.Plane();
     const planeHitPoint = new THREE.Vector3();
@@ -1228,13 +1415,35 @@
       return Math.sign(dx) * normalizedError * MAX_HORIZONTAL_ERROR;
     }
 
+    // Budujemy kierunek strzału z przesunięciem X/Y względem
+    // osi kamery. Znak i wielkość korekty odpowiadają grafikowi.
+    function getAimDirection(xrCamera, horizontalErrorAngle = 0) {
+      xrCamera.updateMatrixWorld(true);
+      xrCamera.getWorldQuaternion(cameraWorldQuaternion);
+
+      const xAngle =
+        THREE.MathUtils.degToRad(aimSettings.x) + horizontalErrorAngle;
+      const yAngle = THREE.MathUtils.degToRad(aimSettings.y);
+
+      cameraDirection
+        .set(Math.tan(xAngle), Math.tan(yAngle), -1)
+        .normalize()
+        .applyQuaternion(cameraWorldQuaternion)
+        .normalize();
+
+      return cameraDirection;
+    }
+
     function fireShot(horizontalErrorAngle) {
       if (!targetPlaced || gameFinished || shotCount >= 5) return;
 
       const xrCamera = renderer.xr.getCamera(camera);
       xrCamera.updateMatrixWorld(true);
       xrCamera.getWorldPosition(cameraPosition);
-      xrCamera.getWorldDirection(cameraDirection);
+
+      // Ten sam kąt X/Y, który przesuwa celownik na ekranie,
+      // zmienia teraz rzeczywisty kierunek strzału.
+      getAimDirection(xrCamera, horizontalErrorAngle);
 
       target.updateMatrixWorld(true);
       targetNormal.set(0, 0, 1)
@@ -1249,8 +1458,6 @@
 
       if (centerAimPoint !== null) {
         const localPoint = target.worldToLocal(centerAimPoint.clone());
-        const horizontalOffset = selectedDistance * Math.tan(horizontalErrorAngle);
-        localPoint.x += horizontalOffset;
 
         const distanceFromCenter = Math.sqrt(
           localPoint.x * localPoint.x + localPoint.y * localPoint.y
@@ -1258,8 +1465,8 @@
 
         points = getPoints(distanceFromCenter);
 
-        if (points > 0) showMarker(target.localToWorld(localPoint.clone()));
-        else removeMarker();
+        // Marker pokazuje rzeczywisty punkt trafienia, także przy pudle.
+        showMarker(target.localToWorld(localPoint.clone()));
       } else {
         removeMarker();
       }
@@ -1402,6 +1609,7 @@
       crosshairAllowed = true;
       pendingCrosshairMode = crosshairMode;
       applyCrosshairMode(crosshairMode);
+      updateCrosshairScreenPosition();
 
       removeMarker();
       scoreRows.replaceChildren();
@@ -1446,6 +1654,7 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      updateCrosshairScreenPosition();
     });
   </script>
 </body>
