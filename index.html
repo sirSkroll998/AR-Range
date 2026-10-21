@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Range Beta 0.10</title>
+  <title>AR Range Beta 0.11</title>
 
   <script type="importmap">
   {
@@ -58,6 +57,7 @@
       pointer-events: none;
     }
 
+    /* CROSS — klasyczny krzyż */
     #crosshair::before {
       content: "";
       position: absolute;
@@ -78,6 +78,20 @@
       height: 1px;
       background: #fff;
       box-shadow: 0 0 1px #000, 0 0 2px #000;
+    }
+
+    /* DOT — pojedynczy punkt */
+    #crosshair.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 2px #000, 0 0 4px #000;
+    }
+
+    #crosshair.dot::before,
+    #crosshair.dot::after {
+      display: none;
     }
 
     #scoreboard {
@@ -196,8 +210,16 @@
       background: rgba(0,90,55,.9);
     }
 
-    #weaponSettingsView { display: none; }
-    #weaponSettingsView.active { display: block; }
+    #weaponSettingsView,
+    #crosshairSettingsView {
+      display: none;
+    }
+
+    #weaponSettingsView.active,
+    #crosshairSettingsView.active {
+      display: block;
+    }
+
     #devHomeView.hidden { display: none; }
 
     .devSection {
@@ -285,6 +307,83 @@
       background: rgba(35,39,43,.75);
     }
 
+    /* Opcje wyboru celownika */
+    .crosshairOption {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 10px 0;
+      padding: 13px 11px;
+      border: 1px solid rgba(220,230,235,.3);
+      border-radius: 9px;
+      background: rgba(20,28,32,.7);
+      font-size: 14px;
+      touch-action: manipulation;
+    }
+
+    .crosshairOption:has(input:checked) {
+      border-color: #00ff88;
+      background: rgba(0,90,55,.3);
+    }
+
+    .crosshairOption input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: #00ff88;
+      flex-shrink: 0;
+    }
+
+    .crosshairOption span {
+      flex: 1;
+    }
+
+    .crosshairPreview {
+      width: 34px;
+      height: 28px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .previewCross::before,
+    .previewCross::after {
+      content: "";
+      position: absolute;
+      background: white;
+      box-shadow: 0 0 2px #000;
+    }
+
+    .previewCross::before {
+      width: 1px;
+      height: 24px;
+      left: 16px;
+      top: 2px;
+    }
+
+    .previewCross::after {
+      width: 24px;
+      height: 1px;
+      left: 4px;
+      top: 14px;
+    }
+
+    .previewDot::after {
+      content: "";
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      left: 13px;
+      top: 10px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 0 3px #000;
+    }
+
+    .previewBlank {
+      border: 1px dashed rgba(255,255,255,.22);
+      border-radius: 5px;
+    }
+
     #devMessage {
       min-height: 18px;
       margin-top: 10px;
@@ -329,10 +428,18 @@
     <div id="devHomeView">
       <h2>AR Range — DEV</h2>
       <p class="devIntro">Wybierz kategorię ustawień.</p>
+
       <button id="openWeaponSettings" class="devMenuButton" type="button">
         🔫 Ustawienie Glocka
         <div style="font-size:11px;font-weight:normal;color:#c8d8d0;margin-top:4px">
           Położenie, obrót i rozmiar modelu
+        </div>
+      </button>
+
+      <button id="openCrosshairSettings" class="devMenuButton" type="button">
+        🎯 CROSSHAIR
+        <div style="font-size:11px;font-weight:normal;color:#c8d8d0;margin-top:4px">
+          Wybór celownika: CROSS, DOT lub BLANK
         </div>
       </button>
     </div>
@@ -435,6 +542,45 @@
 
       <div id="devMessage">Oczekiwanie na załadowanie Glocka…</div>
     </div>
+
+    <div id="crosshairSettingsView">
+      <h2>Crosshair</h2>
+      <p class="devIntro">
+        Wybierz wygląd celownika. Zmiana jest widoczna od razu.
+        Przycisk zapisu zachowa wybrany wariant.
+      </p>
+
+      <div class="devSection">
+        <h3>Wariant celownika</h3>
+
+        <label class="crosshairOption">
+          <input type="radio" name="crosshairMode" value="cross">
+          <span><strong>CROSS</strong><br><small>Klasyczny krzyż</small></span>
+          <div class="crosshairPreview previewCross"></div>
+        </label>
+
+        <label class="crosshairOption">
+          <input type="radio" name="crosshairMode" value="dot">
+          <span><strong>DOT</strong><br><small>Pojedynczy punkt</small></span>
+          <div class="crosshairPreview previewDot"></div>
+        </label>
+
+        <label class="crosshairOption">
+          <input type="radio" name="crosshairMode" value="blank">
+          <span><strong>BLANK</strong><br><small>Bez celownika</small></span>
+          <div class="crosshairPreview previewBlank"></div>
+        </label>
+      </div>
+
+      <div class="devButtons">
+        <button id="saveCrosshairSettings" type="button">Zapisz zmiany</button>
+        <button id="backFromCrosshair" class="secondary" type="button">Wróć do menu</button>
+      </div>
+
+      <div id="crosshairMessage" class="devMessage">
+        Wybierz wariant celownika.
+      </div>
+    </div>
   </div>
 
   <div id="arButtonContainer"></div>
@@ -454,7 +600,9 @@
     const devPanel = document.getElementById('devPanel');
     const devHomeView = document.getElementById('devHomeView');
     const weaponSettingsView = document.getElementById('weaponSettingsView');
+    const crosshairSettingsView = document.getElementById('crosshairSettingsView');
     const devMessage = document.getElementById('devMessage');
+    const crosshairMessage = document.getElementById('crosshairMessage');
 
     const DISTANCES = [1, 5, 10, 15, 25, 50, 100];
 
@@ -492,6 +640,71 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
+
+    // =====================================================
+    // CELOWNIK — CROSS / DOT / BLANK
+    // =====================================================
+
+    const CROSSHAIR_STORAGE_KEY = 'arRangeCrosshairModeV011';
+    const VALID_CROSSHAIR_MODES = ['cross', 'dot', 'blank'];
+
+    function loadCrosshairMode() {
+      try {
+        const saved = localStorage.getItem(CROSSHAIR_STORAGE_KEY);
+        return VALID_CROSSHAIR_MODES.includes(saved) ? saved : 'blank';
+      } catch (error) {
+        console.warn('Nie udało się odczytać ustawienia celownika:', error);
+        return 'blank';
+      }
+    }
+
+    let crosshairMode = loadCrosshairMode();
+    let pendingCrosshairMode = crosshairMode;
+    let crosshairAllowed = false;
+
+    function applyCrosshairMode(mode = pendingCrosshairMode) {
+      crosshair.classList.toggle('dot', mode === 'dot');
+
+      if (crosshairAllowed && mode !== 'blank') {
+        crosshair.style.display = 'block';
+      } else {
+        crosshair.style.display = 'none';
+      }
+    }
+
+    function refreshCrosshairOptions() {
+      document.querySelectorAll('input[name="crosshairMode"]').forEach(input => {
+        input.checked = input.value === pendingCrosshairMode;
+      });
+    }
+
+    document.querySelectorAll('input[name="crosshairMode"]').forEach(input => {
+      input.addEventListener('change', () => {
+        if (!input.checked) return;
+
+        pendingCrosshairMode = input.value;
+        applyCrosshairMode();
+
+        crosshairMessage.textContent =
+          'Podgląd: ' + pendingCrosshairMode.toUpperCase() +
+          '. Kliknij „Zapisz zmiany”, aby zachować wybór.';
+      });
+    });
+
+    document.getElementById('saveCrosshairSettings').addEventListener('click', () => {
+      crosshairMode = pendingCrosshairMode;
+
+      try {
+        localStorage.setItem(CROSSHAIR_STORAGE_KEY, crosshairMode);
+        applyCrosshairMode(crosshairMode);
+        crosshairMessage.textContent =
+          'Zapisano celownik: ' + crosshairMode.toUpperCase() + '.';
+      } catch (error) {
+        crosshairMessage.textContent =
+          'Nie udało się zapisać ustawienia w pamięci przeglądarki.';
+        console.warn('Zapis ustawienia celownika nie powiódł się:', error);
+      }
+    });
 
     // =====================================================
     // USTAWIENIA GLOCKA
@@ -622,7 +835,6 @@
       const max = Number(input.max);
       const step = Number(input.step);
 
-      // Zaokrąglenie do kroku suwaka ogranicza błędy zmiennoprzecinkowe.
       const decimals = (String(step).split('.')[1] || '').length;
       const clamped = THREE.MathUtils.clamp(value, min, max);
       const rounded = Number((Math.round(clamped / step) * step).toFixed(decimals));
@@ -643,7 +855,6 @@
       });
     }
 
-    // Przyciski precyzyjnej korekty: dokładnie o jeden krok suwaka.
     document.querySelectorAll('.fineButton').forEach(button => {
       button.addEventListener('click', () => {
         const key = button.dataset.setting;
@@ -676,12 +887,26 @@
     function showDevHome() {
       devHomeView.classList.remove('hidden');
       weaponSettingsView.classList.remove('active');
+      crosshairSettingsView.classList.remove('active');
     }
 
     function showWeaponSettings() {
       devHomeView.classList.add('hidden');
       weaponSettingsView.classList.add('active');
+      crosshairSettingsView.classList.remove('active');
       refreshWeaponControls();
+    }
+
+    function showCrosshairSettings() {
+      devHomeView.classList.add('hidden');
+      weaponSettingsView.classList.remove('active');
+      crosshairSettingsView.classList.add('active');
+
+      pendingCrosshairMode = crosshairMode;
+      refreshCrosshairOptions();
+      applyCrosshairMode();
+      crosshairMessage.textContent =
+        'Aktualnie zapisany wariant: ' + crosshairMode.toUpperCase() + '.';
     }
 
     devToggle.addEventListener('click', () => {
@@ -691,10 +916,20 @@
       if (opening) showDevHome();
     });
 
-    document.getElementById('openWeaponSettings').addEventListener('click', showWeaponSettings);
-    document.getElementById('backToDevMenu').addEventListener('click', showDevHome);
+    document.getElementById('openWeaponSettings')
+      .addEventListener('click', showWeaponSettings);
+
+    document.getElementById('openCrosshairSettings')
+      .addEventListener('click', showCrosshairSettings);
+
+    document.getElementById('backToDevMenu')
+      .addEventListener('click', showDevHome);
+
+    document.getElementById('backFromCrosshair')
+      .addEventListener('click', showDevHome);
 
     refreshWeaponControls();
+    applyCrosshairMode(crosshairMode);
 
     gltfLoader.load(
       weaponPath,
@@ -726,7 +961,8 @@
       undefined,
       (error) => {
         console.warn('Nie udało się załadować modelu Glocka:', error);
-        devMessage.textContent = 'Nie udało się załadować Glocka. Sprawdź ścieżkę do pliku GLB.';
+        devMessage.textContent =
+          'Nie udało się załadować Glocka. Sprawdź ścieżkę do pliku GLB.';
       }
     );
 
@@ -734,6 +970,7 @@
       optionalFeatures: ['dom-overlay'],
       domOverlay: { root: document.body }
     });
+
     document.getElementById('arButtonContainer').appendChild(arButton);
 
     // =====================================================
@@ -1039,9 +1276,11 @@
 
       if (shotCount === 5) {
         gameFinished = true;
+        crosshairAllowed = false;
+        applyCrosshairMode(crosshairMode);
+
         status.textContent = 'KONIEC! Wynik: ' + totalPoints + ' / 50';
         status.style.color = '#00ff88';
-        crosshair.style.display = 'none';
       } else {
         status.textContent += '  Strzał ' + shotCount + ' / 5';
       }
@@ -1160,11 +1399,14 @@
       totalPoints = 0;
       activeGesture = null;
 
+      crosshairAllowed = true;
+      pendingCrosshairMode = crosshairMode;
+      applyCrosshairMode(crosshairMode);
+
       removeMarker();
       scoreRows.replaceChildren();
       totalElement.textContent = 'Suma: 0 / 50';
 
-      crosshair.style.display = 'block';
       scoreboard.style.display = 'none';
       weaponRoot.visible = weaponLoaded;
 
@@ -1184,7 +1426,8 @@
       activeGesture = null;
 
       weaponRoot.visible = false;
-      crosshair.style.display = 'none';
+      crosshairAllowed = false;
+      applyCrosshairMode(crosshairMode);
       scoreboard.style.display = 'none';
 
       devPanel.classList.remove('open');
