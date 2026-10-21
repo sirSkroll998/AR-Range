@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Range Beta 0.9</title>
+  <title>AR Range Beta 0.10</title>
 
   <script type="importmap">
   {
@@ -16,9 +16,7 @@
   </script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -42,7 +40,7 @@
       z-index: 10;
       padding: 10px;
       border-radius: 8px;
-      background: rgba(0, 0, 0, 0.72);
+      background: rgba(0,0,0,.72);
       text-align: center;
       font-size: 15px;
       pointer-events: none;
@@ -52,7 +50,7 @@
       position: fixed;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%,-50%);
       z-index: 10;
       width: 24px;
       height: 24px;
@@ -91,7 +89,7 @@
       z-index: 10;
       padding: 10px;
       border-radius: 10px;
-      background: rgba(0, 0, 0, 0.78);
+      background: rgba(0,0,0,.78);
       font-size: 14px;
       pointer-events: none;
     }
@@ -114,9 +112,7 @@
       border-bottom: 1px solid #555;
     }
 
-    #scoreboard th {
-      color: #00ff88;
-    }
+    #scoreboard th { color: #00ff88; }
 
     #total {
       margin-top: 8px;
@@ -126,7 +122,6 @@
       color: #00ff88;
     }
 
-    /* Przycisk DEV w prawym górnym rogu */
     #devToggle {
       display: none;
       position: fixed;
@@ -134,41 +129,38 @@
       right: 12px;
       z-index: 40;
       padding: 10px 14px;
-      border: 1px solid rgba(0, 255, 136, 0.9);
+      border: 1px solid rgba(0,255,136,.9);
       border-radius: 10px;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(0,0,0,.55);
       color: #00ff88;
       font-size: 14px;
       font-weight: bold;
       touch-action: manipulation;
     }
 
-    /* Główne okno menu DEV */
     #devPanel {
       display: none;
       position: fixed;
       top: 58px;
       right: 10px;
-      width: min(340px, calc(100vw - 20px));
+      width: min(360px, calc(100vw - 20px));
       max-height: calc(100dvh - 78px);
       z-index: 39;
       overflow-y: auto;
       overscroll-behavior: contain;
       padding: 14px;
-      border: 1px solid rgba(0, 255, 136, 0.55);
+      border: 1px solid rgba(0,255,136,.55);
       border-radius: 14px;
-      background: rgba(10, 14, 17, 0.70);
+      background: rgba(10,14,17,.62);
       color: #fff;
-      box-shadow: 0 5px 24px rgba(0, 0, 0, 0.18);
-      backdrop-filter: blur(3px);
-      -webkit-backdrop-filter: blur(3px);
+      box-shadow: 0 5px 24px rgba(0,0,0,.18);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
     }
 
-    #devPanel.open {
-      display: block;
-    }
+    #devPanel.open { display: block; }
 
     #devPanel h2 {
       margin: 0 0 5px;
@@ -188,9 +180,9 @@
       width: 100%;
       margin-top: 10px;
       padding: 13px 11px;
-      border: 1px solid rgba(0, 255, 136, 0.75);
+      border: 1px solid rgba(0,255,136,.75);
       border-radius: 9px;
-      background: rgba(16, 37, 28, 0.78);
+      background: rgba(16,37,28,.78);
       color: #fff;
       text-align: left;
       font-size: 14px;
@@ -199,26 +191,19 @@
     }
 
     .devMenuButton:active,
-    .devButtons button:active {
-      background: rgba(0, 90, 55, 0.9);
+    .devButtons button:active,
+    .fineButton:active {
+      background: rgba(0,90,55,.9);
     }
 
-    #weaponSettingsView {
-      display: none;
-    }
-
-    #weaponSettingsView.active {
-      display: block;
-    }
-
-    #devHomeView.hidden {
-      display: none;
-    }
+    #weaponSettingsView { display: none; }
+    #weaponSettingsView.active { display: block; }
+    #devHomeView.hidden { display: none; }
 
     .devSection {
       margin-top: 12px;
       padding-top: 10px;
-      border-top: 1px solid rgba(220, 230, 235, 0.24);
+      border-top: 1px solid rgba(220,230,235,.24);
     }
 
     .devSection h3 {
@@ -227,9 +212,7 @@
       font-size: 14px;
     }
 
-    .devControl {
-      margin-bottom: 12px;
-    }
+    .devControl { margin-bottom: 13px; }
 
     .devControl label {
       display: flex;
@@ -241,19 +224,41 @@
     }
 
     .devValue {
-      min-width: 68px;
+      min-width: 78px;
       color: #00ff88;
       text-align: right;
       font-variant-numeric: tabular-nums;
     }
 
-    .devControl input[type="range"] {
+    .rangeRow {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .rangeRow input[type="range"] {
       display: block;
+      flex: 1;
+      min-width: 0;
       width: 100%;
-      height: 28px;
+      height: 30px;
       margin: 0;
       accent-color: #00ff88;
       touch-action: pan-y;
+    }
+
+    .fineButton {
+      flex: 0 0 39px;
+      width: 39px;
+      height: 35px;
+      padding: 0;
+      border: 1px solid rgba(0,255,136,.75);
+      border-radius: 8px;
+      background: rgba(16,37,28,.82);
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+      touch-action: manipulation;
     }
 
     .devButtons {
@@ -267,17 +272,17 @@
       flex: 1;
       min-width: 90px;
       padding: 10px 7px;
-      border: 1px solid rgba(0, 255, 136, 0.75);
+      border: 1px solid rgba(0,255,136,.75);
       border-radius: 8px;
-      background: rgba(16, 37, 28, 0.82);
+      background: rgba(16,37,28,.82);
       color: #fff;
       font-size: 12px;
       touch-action: manipulation;
     }
 
     .devButtons button.secondary {
-      border-color: rgba(220, 220, 220, 0.45);
-      background: rgba(35, 39, 43, 0.75);
+      border-color: rgba(220,220,220,.45);
+      background: rgba(35,39,43,.75);
     }
 
     #devMessage {
@@ -299,9 +304,7 @@
       pointer-events: none;
     }
 
-    #arButtonContainer > * {
-      pointer-events: auto;
-    }
+    #arButtonContainer > * { pointer-events: auto; }
   </style>
 </head>
 
@@ -313,11 +316,7 @@
     <h3>Wyniki strzelania</h3>
     <table>
       <thead>
-        <tr>
-          <th>Strzał</th>
-          <th>Wynik</th>
-          <th>Punkty</th>
-        </tr>
+        <tr><th>Strzał</th><th>Wynik</th><th>Punkty</th></tr>
       </thead>
       <tbody id="scoreRows"></tbody>
     </table>
@@ -327,13 +326,9 @@
   <button id="devToggle" type="button">DEV ⚙</button>
 
   <div id="devPanel">
-    <!-- Ekran główny menu DEV -->
     <div id="devHomeView">
       <h2>AR Range — DEV</h2>
-      <p class="devIntro">
-        Wybierz kategorię ustawień, którą chcesz zmienić.
-      </p>
-
+      <p class="devIntro">Wybierz kategorię ustawień.</p>
       <button id="openWeaponSettings" class="devMenuButton" type="button">
         🔫 Ustawienie Glocka
         <div style="font-size:11px;font-weight:normal;color:#c8d8d0;margin-top:4px">
@@ -342,12 +337,11 @@
       </button>
     </div>
 
-    <!-- Ustawienia Glocka -->
     <div id="weaponSettingsView">
       <h2>Ustawienie Glocka</h2>
       <p class="devIntro">
-        Zmiany widać na żywo. X/Y/Z to pozycja względem kamery.
-        Obrót jest podawany w stopniach.
+        Zmiany widać na żywo. Przyciski − i + służą do dokładnej korekty.
+        X/Y/Z oznaczają pozycję względem kamery.
       </p>
 
       <div class="devSection">
@@ -356,28 +350,37 @@
         <div class="devControl">
           <label for="weaponX">
             <span>X — lewo / prawo</span>
-            <span class="devValue" id="weaponXValue">0.16 m</span>
+            <span class="devValue" id="weaponXValue">0.160 m</span>
           </label>
-          <input id="weaponX" type="range"
-            min="-0.50" max="0.50" step="0.005" value="0.16">
+          <div class="rangeRow">
+            <button class="fineButton" type="button" data-setting="x" data-dir="-1" aria-label="Zmniejsz X">−</button>
+            <input id="weaponX" type="range" min="-0.50" max="0.50" step="0.001" value="0.16">
+            <button class="fineButton" type="button" data-setting="x" data-dir="1" aria-label="Zwiększ X">+</button>
+          </div>
         </div>
 
         <div class="devControl">
           <label for="weaponY">
             <span>Y — góra / dół</span>
-            <span class="devValue" id="weaponYValue">-0.16 m</span>
+            <span class="devValue" id="weaponYValue">-0.160 m</span>
           </label>
-          <input id="weaponY" type="range"
-            min="-0.50" max="0.30" step="0.005" value="-0.16">
+          <div class="rangeRow">
+            <button class="fineButton" type="button" data-setting="y" data-dir="-1" aria-label="Zmniejsz Y">−</button>
+            <input id="weaponY" type="range" min="-0.50" max="0.30" step="0.001" value="-0.16">
+            <button class="fineButton" type="button" data-setting="y" data-dir="1" aria-label="Zwiększ Y">+</button>
+          </div>
         </div>
 
         <div class="devControl">
           <label for="weaponZ">
             <span>Z — odległość od kamery</span>
-            <span class="devValue" id="weaponZValue">-0.42 m</span>
+            <span class="devValue" id="weaponZValue">-0.420 m</span>
           </label>
-          <input id="weaponZ" type="range"
-            min="-1.00" max="-0.10" step="0.005" value="-0.42">
+          <div class="rangeRow">
+            <button class="fineButton" type="button" data-setting="z" data-dir="-1" aria-label="Zmniejsz Z">−</button>
+            <input id="weaponZ" type="range" min="-1.00" max="-0.10" step="0.001" value="-0.42">
+            <button class="fineButton" type="button" data-setting="z" data-dir="1" aria-label="Zwiększ Z">+</button>
+          </div>
         </div>
       </div>
 
@@ -385,61 +388,52 @@
         <h3>Obrót modelu</h3>
 
         <div class="devControl">
-          <label for="weaponRotX">
-            <span>Obrót X</span>
-            <span class="devValue" id="weaponRotXValue">0°</span>
-          </label>
-          <input id="weaponRotX" type="range"
-            min="-180" max="180" step="1" value="0">
+          <label for="weaponRotX"><span>Obrót X</span><span class="devValue" id="weaponRotXValue">0°</span></label>
+          <div class="rangeRow">
+            <button class="fineButton" type="button" data-setting="rotX" data-dir="-1">−</button>
+            <input id="weaponRotX" type="range" min="-180" max="180" step="0.5" value="0">
+            <button class="fineButton" type="button" data-setting="rotX" data-dir="1">+</button>
+          </div>
         </div>
 
         <div class="devControl">
-          <label for="weaponRotY">
-            <span>Obrót Y</span>
-            <span class="devValue" id="weaponRotYValue">0°</span>
-          </label>
-          <input id="weaponRotY" type="range"
-            min="-180" max="180" step="1" value="0">
+          <label for="weaponRotY"><span>Obrót Y</span><span class="devValue" id="weaponRotYValue">0°</span></label>
+          <div class="rangeRow">
+            <button class="fineButton" type="button" data-setting="rotY" data-dir="-1">−</button>
+            <input id="weaponRotY" type="range" min="-180" max="180" step="0.5" value="0">
+            <button class="fineButton" type="button" data-setting="rotY" data-dir="1">+</button>
+          </div>
         </div>
 
         <div class="devControl">
-          <label for="weaponRotZ">
-            <span>Obrót Z</span>
-            <span class="devValue" id="weaponRotZValue">0°</span>
-          </label>
-          <input id="weaponRotZ" type="range"
-            min="-180" max="180" step="1" value="0">
+          <label for="weaponRotZ"><span>Obrót Z</span><span class="devValue" id="weaponRotZValue">0°</span></label>
+          <div class="rangeRow">
+            <button class="fineButton" type="button" data-setting="rotZ" data-dir="-1">−</button>
+            <input id="weaponRotZ" type="range" min="-180" max="180" step="0.5" value="0">
+            <button class="fineButton" type="button" data-setting="rotZ" data-dir="1">+</button>
+          </div>
         </div>
       </div>
 
       <div class="devSection">
         <h3>Rozmiar modelu</h3>
-
         <div class="devControl">
-          <label for="weaponScale">
-            <span>Skala</span>
-            <span class="devValue" id="weaponScaleValue">0.45</span>
-          </label>
-          <input id="weaponScale" type="range"
-            min="0.10" max="0.80" step="0.01" value="0.45">
+          <label for="weaponScale"><span>Skala</span><span class="devValue" id="weaponScaleValue">0.450</span></label>
+          <div class="rangeRow">
+            <button class="fineButton" type="button" data-setting="scale" data-dir="-1">−</button>
+            <input id="weaponScale" type="range" min="0.10" max="0.80" step="0.005" value="0.45">
+            <button class="fineButton" type="button" data-setting="scale" data-dir="1">+</button>
+          </div>
         </div>
       </div>
 
       <div class="devButtons">
-        <button id="saveWeaponSettings" type="button">
-          Zapisz
-        </button>
-        <button id="resetWeaponSettings" class="secondary" type="button">
-          Reset
-        </button>
-        <button id="backToDevMenu" class="secondary" type="button">
-          Wróć do menu
-        </button>
+        <button id="saveWeaponSettings" type="button">Zapisz</button>
+        <button id="resetWeaponSettings" class="secondary" type="button">Reset</button>
+        <button id="backToDevMenu" class="secondary" type="button">Wróć do menu</button>
       </div>
 
-      <div id="devMessage">
-        Oczekiwanie na załadowanie Glocka…
-      </div>
+      <div id="devMessage">Oczekiwanie na załadowanie Glocka…</div>
     </div>
   </div>
 
@@ -483,33 +477,24 @@
 
     const scene = new THREE.Scene();
 
-    scene.add(
-      new THREE.HemisphereLight(0xffffff, 0x555566, 2.0)
-    );
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x555566, 2.0));
 
     const weaponLight = new THREE.DirectionalLight(0xffffff, 2.0);
     weaponLight.position.set(0.5, 1, 1);
     scene.add(weaponLight);
 
     const camera = new THREE.PerspectiveCamera(
-      70,
-      window.innerWidth / window.innerHeight,
-      0.01,
-      200
+      70, window.innerWidth / window.innerHeight, 0.01, 200
     );
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true
-    });
-
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
 
     // =====================================================
-    // PANEL DEV — ustawienia Glocka
+    // USTAWIENIA GLOCKA
     // =====================================================
 
     const DEFAULT_WEAPON_SETTINGS = {
@@ -522,7 +507,7 @@
       scale: 0.45
     };
 
-    const STORAGE_KEY = 'arRangeWeaponSettingsV09';
+    const STORAGE_KEY = 'arRangeWeaponSettingsV010';
 
     function loadSavedWeaponSettings() {
       try {
@@ -533,10 +518,7 @@
         const result = { ...DEFAULT_WEAPON_SETTINGS };
 
         for (const key of Object.keys(result)) {
-          if (
-            typeof parsed[key] === 'number' &&
-            Number.isFinite(parsed[key])
-          ) {
+          if (typeof parsed[key] === 'number' && Number.isFinite(parsed[key])) {
             result[key] = parsed[key];
           }
         }
@@ -571,22 +553,16 @@
     };
 
     function formatSetting(key, value) {
-      if (key === 'rotX' || key === 'rotY' || key === 'rotZ') {
-        return Math.round(value) + '°';
+      if (key.startsWith('rot')) {
+        return Number.isInteger(value) ? value + '°' : value.toFixed(1) + '°';
       }
-
-      if (key === 'scale') {
-        return value.toFixed(2);
-      }
-
-      return value.toFixed(3) + ' m';
+      return value.toFixed(3) + (key === 'scale' ? '' : ' m');
     }
 
     function refreshWeaponControls() {
       for (const key of Object.keys(settingInputs)) {
         settingInputs[key].value = weaponSettings[key];
-        settingOutputs[key].textContent =
-          formatSetting(key, weaponSettings[key]);
+        settingOutputs[key].textContent = formatSetting(key, weaponSettings[key]);
       }
     }
 
@@ -604,16 +580,12 @@
     const weaponOffset = new THREE.Vector3();
 
     const gltfLoader = new GLTFLoader();
-
-    const weaponPath =
-      './assets/weapons/glock/Glock%2019%20Gen%204%20(1).glb';
+    const weaponPath = './assets/weapons/glock/Glock%2019%20Gen%204%20(1).glb';
 
     function applyWeaponSettings() {
       if (!weaponModel || !weaponLoaded) return;
 
-      const modelScale =
-        weaponSettings.scale / weaponLargestDimension;
-
+      const modelScale = weaponSettings.scale / weaponLargestDimension;
       weaponModel.scale.setScalar(modelScale);
 
       weaponModel.position.set(
@@ -633,63 +605,73 @@
       if (!weaponLoaded || !renderer.xr.isPresenting) return;
 
       const xrCamera = renderer.xr.getCamera(camera);
-
       xrCamera.updateMatrixWorld(true);
       xrCamera.getWorldPosition(weaponWorldPosition);
       xrCamera.getWorldQuaternion(weaponWorldQuaternion);
 
-      weaponOffset.set(
-        weaponSettings.x,
-        weaponSettings.y,
-        weaponSettings.z
-      );
-
+      weaponOffset.set(weaponSettings.x, weaponSettings.y, weaponSettings.z);
       weaponOffset.applyQuaternion(weaponWorldQuaternion);
 
-      weaponRoot.position.copy(weaponWorldPosition);
-      weaponRoot.position.add(weaponOffset);
+      weaponRoot.position.copy(weaponWorldPosition).add(weaponOffset);
       weaponRoot.quaternion.copy(weaponWorldQuaternion);
+    }
+
+    function updateOneSetting(key, value) {
+      const input = settingInputs[key];
+      const min = Number(input.min);
+      const max = Number(input.max);
+      const step = Number(input.step);
+
+      // Zaokrąglenie do kroku suwaka ogranicza błędy zmiennoprzecinkowe.
+      const decimals = (String(step).split('.')[1] || '').length;
+      const clamped = THREE.MathUtils.clamp(value, min, max);
+      const rounded = Number((Math.round(clamped / step) * step).toFixed(decimals));
+
+      weaponSettings[key] = THREE.MathUtils.clamp(rounded, min, max);
+      input.value = String(weaponSettings[key]);
+      settingOutputs[key].textContent = formatSetting(key, weaponSettings[key]);
+
+      applyWeaponSettings();
+
+      devMessage.textContent =
+        'Podgląd na żywo. Zapisz, aby zachować ustawienia po odświeżeniu.';
     }
 
     for (const key of Object.keys(settingInputs)) {
       settingInputs[key].addEventListener('input', () => {
-        weaponSettings[key] = Number(settingInputs[key].value);
-        settingOutputs[key].textContent =
-          formatSetting(key, weaponSettings[key]);
-
-        applyWeaponSettings();
-
-        devMessage.textContent =
-          'Podgląd na żywo. Zapisz, aby zachować ustawienia po odświeżeniu.';
+        updateOneSetting(key, Number(settingInputs[key].value));
       });
     }
 
-    document.getElementById('saveWeaponSettings')
-      .addEventListener('click', () => {
-        try {
-          localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(weaponSettings)
-          );
+    // Przyciski precyzyjnej korekty: dokładnie o jeden krok suwaka.
+    document.querySelectorAll('.fineButton').forEach(button => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.setting;
+        const direction = Number(button.dataset.dir);
+        const input = settingInputs[key];
+        const step = Number(input.step);
 
-          devMessage.textContent =
-            'Ustawienia zapisane na tym urządzeniu.';
-        } catch (error) {
-          devMessage.textContent =
-            'Nie udało się zapisać ustawień w pamięci przeglądarki.';
-          console.warn('Zapis ustawień nie powiódł się:', error);
-        }
+        updateOneSetting(key, weaponSettings[key] + direction * step);
       });
+    });
 
-    document.getElementById('resetWeaponSettings')
-      .addEventListener('click', () => {
-        weaponSettings = { ...DEFAULT_WEAPON_SETTINGS };
-        refreshWeaponControls();
-        applyWeaponSettings();
+    document.getElementById('saveWeaponSettings').addEventListener('click', () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(weaponSettings));
+        devMessage.textContent = 'Ustawienia zapisane na tym urządzeniu.';
+      } catch (error) {
+        devMessage.textContent = 'Nie udało się zapisać ustawień w pamięci przeglądarki.';
+        console.warn('Zapis ustawień nie powiódł się:', error);
+      }
+    });
 
-        devMessage.textContent =
-          'Przywrócono wartości domyślne. Zapisz, jeśli chcesz je zachować.';
-      });
+    document.getElementById('resetWeaponSettings').addEventListener('click', () => {
+      weaponSettings = { ...DEFAULT_WEAPON_SETTINGS };
+      refreshWeaponControls();
+      applyWeaponSettings();
+      devMessage.textContent =
+        'Przywrócono wartości domyślne. Zapisz, jeśli chcesz je zachować.';
+    });
 
     function showDevHome() {
       devHomeView.classList.remove('hidden');
@@ -704,18 +686,13 @@
 
     devToggle.addEventListener('click', () => {
       const opening = !devPanel.classList.contains('open');
-
       devPanel.classList.toggle('open', opening);
       devToggle.textContent = opening ? 'DEV ✕' : 'DEV ⚙';
-
       if (opening) showDevHome();
     });
 
-    document.getElementById('openWeaponSettings')
-      .addEventListener('click', showWeaponSettings);
-
-    document.getElementById('backToDevMenu')
-      .addEventListener('click', showDevHome);
+    document.getElementById('openWeaponSettings').addEventListener('click', showWeaponSettings);
+    document.getElementById('backToDevMenu').addEventListener('click', showDevHome);
 
     refreshWeaponControls();
 
@@ -727,42 +704,29 @@
 
         const bounds = new THREE.Box3().setFromObject(weaponModel);
         const size = new THREE.Vector3();
-
         bounds.getSize(size);
         bounds.getCenter(weaponModelCenter);
 
-        weaponLargestDimension = Math.max(
-          size.x,
-          size.y,
-          size.z
-        );
+        weaponLargestDimension = Math.max(size.x, size.y, size.z);
 
-        if (
-          !Number.isFinite(weaponLargestDimension) ||
-          weaponLargestDimension <= 0
-        ) {
+        if (!Number.isFinite(weaponLargestDimension) || weaponLargestDimension <= 0) {
           console.warn('Glock: nieprawidłowy rozmiar modelu.');
-          devMessage.textContent =
-            'Model Glocka ma nieprawidłowy rozmiar.';
+          devMessage.textContent = 'Model Glocka ma nieprawidłowy rozmiar.';
           return;
         }
 
         weaponRoot.add(weaponModel);
         weaponLoaded = true;
-
         applyWeaponSettings();
         weaponRoot.visible = renderer.xr.isPresenting;
 
-        devMessage.textContent =
-          'Glock załadowany. Ustawienia działają na żywo.';
-
+        devMessage.textContent = 'Glock załadowany. Ustawienia działają na żywo.';
         console.log('Glock załadowany.');
       },
       undefined,
       (error) => {
         console.warn('Nie udało się załadować modelu Glocka:', error);
-        devMessage.textContent =
-          'Nie udało się załadować Glocka. Sprawdź ścieżkę do pliku GLB.';
+        devMessage.textContent = 'Nie udało się załadować Glocka. Sprawdź ścieżkę do pliku GLB.';
       }
     );
 
@@ -770,7 +734,6 @@
       optionalFeatures: ['dom-overlay'],
       domOverlay: { root: document.body }
     });
-
     document.getElementById('arButtonContainer').appendChild(arButton);
 
     // =====================================================
@@ -780,12 +743,8 @@
     function addDisc(group, radius, color, z) {
       const mesh = new THREE.Mesh(
         new THREE.CircleGeometry(radius, 96),
-        new THREE.MeshBasicMaterial({
-          color,
-          side: THREE.DoubleSide
-        })
+        new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide })
       );
-
       mesh.position.z = z;
       group.add(mesh);
       return mesh;
@@ -804,7 +763,6 @@
           depthTest: false
         })
       );
-
       mesh.position.z = z;
       mesh.renderOrder = 2;
       group.add(mesh);
@@ -823,30 +781,21 @@
           depthWrite: false
         })
       );
-
       group.add(hitArea);
 
       if (type === 'sport') {
         addDisc(group, 0.25, 0xffffff, -0.001);
         addDisc(group, 0.10, 0x111111, 0.001);
-
         for (let i = 1; i <= 10; i++) {
-          addRing(
-            group,
-            i * 0.025,
-            i <= 4 ? 0xffffff : 0x111111,
-            0.003
-          );
+          addRing(group, i * 0.025, i <= 4 ? 0xffffff : 0x111111, 0.003);
         }
       }
 
       if (type === 'precision') {
         addDisc(group, 0.25, 0xffffff, -0.001);
-
         for (let i = 1; i <= 10; i++) {
           addRing(group, i * 0.025, 0x111111, 0.002, 0.0012);
         }
-
         addDisc(group, 0.018, 0xc62828, 0.004);
         addRing(group, 0.025, 0x111111, 0.005, 0.0012);
       }
@@ -858,21 +807,18 @@
         addDisc(group, 0.10, 0xf5c542, 0.003);
         addDisc(group, 0.05, 0xe87528, 0.004);
         addDisc(group, 0.022, 0xd62828, 0.005);
-
         for (let i = 1; i <= 10; i++) {
           addRing(group, i * 0.025, 0x111111, 0.007, 0.001);
         }
       }
 
       addRing(group, 0.25, 0x111111, 0.008, 0.002);
-
       return group;
     }
 
     function disposeTarget(object) {
       object.traverse(child => {
         if (child.geometry) child.geometry.dispose();
-
         if (child.material) {
           if (Array.isArray(child.material)) {
             child.material.forEach(material => material.dispose());
@@ -916,11 +862,9 @@
 
     function updateStatusForPreparation(message = '') {
       const targetName = TARGET_TYPES[selectedTargetIndex].name;
-
       status.textContent =
         targetName + ' · ' + selectedDistance + ' m' +
         (message ? ' · ' + message : '');
-
       status.style.color = '#00ff88';
     }
 
@@ -928,22 +872,13 @@
       if (!placementPreview || targetPlaced) return;
 
       const xrCamera = renderer.xr.getCamera(camera);
-
       xrCamera.updateMatrixWorld(true);
       xrCamera.getWorldPosition(cameraPosition);
       xrCamera.getWorldDirection(cameraDirection);
 
-      targetPosition.copy(cameraPosition).addScaledVector(
-        cameraDirection,
-        selectedDistance
-      );
-
+      targetPosition.copy(cameraPosition).addScaledVector(cameraDirection, selectedDistance);
       targetNormal.copy(cameraDirection).negate();
-
-      targetQuaternion.setFromUnitVectors(
-        forwardAxis,
-        targetNormal
-      );
+      targetQuaternion.setFromUnitVectors(forwardAxis, targetNormal);
 
       target.position.copy(targetPosition);
       target.quaternion.copy(targetQuaternion);
@@ -952,7 +887,6 @@
 
     function replaceTarget() {
       const oldTarget = target;
-
       scene.remove(oldTarget);
       disposeTarget(oldTarget);
 
@@ -963,42 +897,23 @@
 
     function changeTarget(direction) {
       selectedTargetIndex =
-        (selectedTargetIndex + direction + TARGET_TYPES.length) %
-        TARGET_TYPES.length;
-
+        (selectedTargetIndex + direction + TARGET_TYPES.length) % TARGET_TYPES.length;
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
       replaceTarget();
-
-      updateStatusForPreparation(
-        'zmiana tarczy — dotknij ponownie, aby zawiesić'
-      );
+      updateStatusForPreparation('zmiana tarczy — dotknij ponownie, aby zawiesić');
     }
 
     function changeDistance(direction) {
       let index = DISTANCES.indexOf(selectedDistance);
-
-      index = THREE.MathUtils.clamp(
-        index + direction,
-        0,
-        DISTANCES.length - 1
-      );
-
+      index = THREE.MathUtils.clamp(index + direction, 0, DISTANCES.length - 1);
       selectedDistance = DISTANCES[index];
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
-
-      updateStatusForPreparation(
-        'zmiana dystansu — dotknij ponownie, aby zawiesić'
-      );
+      updateStatusForPreparation('zmiana dystansu — dotknij ponownie, aby zawiesić');
     }
 
     function getPoints(distanceFromCenter) {
       if (distanceFromCenter > 0.25) return 0;
-
-      const zone = Math.max(
-        1,
-        Math.ceil(distanceFromCenter / 0.025)
-      );
-
+      const zone = Math.max(1, Math.ceil(distanceFromCenter / 0.025));
       return Math.max(1, 11 - zone);
     }
 
@@ -1007,7 +922,6 @@
         clearTimeout(markerTimer);
         markerTimer = null;
       }
-
       if (marker) {
         scene.remove(marker);
         marker.geometry.dispose();
@@ -1018,26 +932,19 @@
 
     function showMarker(point) {
       removeMarker();
-
       marker = new THREE.Mesh(
         new THREE.SphereGeometry(0.012, 12, 10),
-        new THREE.MeshBasicMaterial({
-          color: 0xffaa00,
-          depthTest: false
-        })
+        new THREE.MeshBasicMaterial({ color: 0xffaa00, depthTest: false })
       );
-
       marker.position.copy(point);
       marker.renderOrder = 10;
       scene.add(marker);
 
       const currentMarker = marker;
-
       markerTimer = setTimeout(() => {
         scene.remove(currentMarker);
         currentMarker.geometry.dispose();
         currentMarker.material.dispose();
-
         if (marker === currentMarker) {
           marker = null;
           markerTimer = null;
@@ -1050,7 +957,6 @@
       totalPoints += points;
 
       const row = document.createElement('tr');
-
       const shotCell = document.createElement('td');
       shotCell.textContent = shotCount;
 
@@ -1063,8 +969,8 @@
       row.appendChild(shotCell);
       row.appendChild(resultCell);
       row.appendChild(pointsCell);
-
       scoreRows.appendChild(row);
+
       totalElement.textContent = 'Suma: ' + totalPoints + ' / 50';
     }
 
@@ -1073,10 +979,7 @@
 
       const slope = dx / dy;
       const absoluteSlope = Math.abs(slope);
-
-      if (absoluteSlope <= HORIZONTAL_DEAD_ZONE) {
-        return 0;
-      }
+      if (absoluteSlope <= HORIZONTAL_DEAD_ZONE) return 0;
 
       const normalizedError = THREE.MathUtils.clamp(
         (absoluteSlope - HORIZONTAL_DEAD_ZONE) /
@@ -1085,62 +988,41 @@
         1
       );
 
-      return Math.sign(dx) *
-        normalizedError *
-        MAX_HORIZONTAL_ERROR;
+      return Math.sign(dx) * normalizedError * MAX_HORIZONTAL_ERROR;
     }
 
     function fireShot(horizontalErrorAngle) {
       if (!targetPlaced || gameFinished || shotCount >= 5) return;
 
       const xrCamera = renderer.xr.getCamera(camera);
-
       xrCamera.updateMatrixWorld(true);
       xrCamera.getWorldPosition(cameraPosition);
       xrCamera.getWorldDirection(cameraDirection);
 
       target.updateMatrixWorld(true);
-
       targetNormal.set(0, 0, 1)
         .applyQuaternion(target.quaternion)
         .normalize();
 
-      targetPlane.setFromNormalAndCoplanarPoint(
-        targetNormal,
-        target.position
-      );
-
+      targetPlane.setFromNormalAndCoplanarPoint(targetNormal, target.position);
       raycaster.set(cameraPosition, cameraDirection);
 
-      const centerAimPoint = raycaster.ray.intersectPlane(
-        targetPlane,
-        planeHitPoint
-      );
-
+      const centerAimPoint = raycaster.ray.intersectPlane(targetPlane, planeHitPoint);
       let points = 0;
 
       if (centerAimPoint !== null) {
-        const localPoint = target.worldToLocal(
-          centerAimPoint.clone()
-        );
-
-        const horizontalOffset =
-          selectedDistance * Math.tan(horizontalErrorAngle);
-
+        const localPoint = target.worldToLocal(centerAimPoint.clone());
+        const horizontalOffset = selectedDistance * Math.tan(horizontalErrorAngle);
         localPoint.x += horizontalOffset;
 
         const distanceFromCenter = Math.sqrt(
-          localPoint.x * localPoint.x +
-          localPoint.y * localPoint.y
+          localPoint.x * localPoint.x + localPoint.y * localPoint.y
         );
 
         points = getPoints(distanceFromCenter);
 
-        if (points > 0) {
-          showMarker(target.localToWorld(localPoint.clone()));
-        } else {
-          removeMarker();
-        }
+        if (points > 0) showMarker(target.localToWorld(localPoint.clone()));
+        else removeMarker();
       } else {
         removeMarker();
       }
@@ -1166,11 +1048,7 @@
     }
 
     function handlePointerDown(event) {
-      // Panel DEV nie może wywoływać gestów gry.
-      if (
-        devPanel.contains(event.target) ||
-        devToggle.contains(event.target)
-      ) {
+      if (devPanel.contains(event.target) || devToggle.contains(event.target)) {
         activeGesture = null;
         return;
       }
@@ -1181,14 +1059,9 @@
       const x = event.clientX / window.innerWidth;
       const y = event.clientY / window.innerHeight;
 
-      if (targetPlaced) {
-        if (
-          x < TRIGGER_MIN_X ||
-          x > TRIGGER_MAX_X ||
-          y < TRIGGER_MIN_Y
-        ) {
-          return;
-        }
+      if (targetPlaced &&
+          (x < TRIGGER_MIN_X || x > TRIGGER_MAX_X || y < TRIGGER_MIN_Y)) {
+        return;
       }
 
       activeGesture = {
@@ -1203,25 +1076,14 @@
     }
 
     function handlePointerMove(event) {
-      if (
-        !activeGesture ||
-        event.pointerId !== activeGesture.pointerId
-      ) {
-        return;
-      }
-
+      if (!activeGesture || event.pointerId !== activeGesture.pointerId) return;
       activeGesture.endX = event.clientX;
       activeGesture.endY = event.clientY;
       event.preventDefault();
     }
 
     function handlePointerUp(event) {
-      if (
-        !activeGesture ||
-        event.pointerId !== activeGesture.pointerId
-      ) {
-        return;
-      }
+      if (!activeGesture || event.pointerId !== activeGesture.pointerId) return;
 
       activeGesture.endX = event.clientX;
       activeGesture.endY = event.clientY;
@@ -1249,10 +1111,7 @@
           return;
         }
 
-        updateStatusForPreparation(
-          'gest powinien być poziomy lub pionowy'
-        );
-
+        updateStatusForPreparation('gest powinien być poziomy lub pionowy');
         return;
       }
 
@@ -1264,21 +1123,10 @@
       fireShot(horizontalError);
     }
 
-    document.addEventListener('pointerdown', handlePointerDown, {
-      passive: false
-    });
-
-    document.addEventListener('pointermove', handlePointerMove, {
-      passive: false
-    });
-
-    document.addEventListener('pointerup', handlePointerUp, {
-      passive: false
-    });
-
-    document.addEventListener('pointercancel', () => {
-      activeGesture = null;
-    });
+    document.addEventListener('pointerdown', handlePointerDown, { passive: false });
+    document.addEventListener('pointermove', handlePointerMove, { passive: false });
+    document.addEventListener('pointerup', handlePointerUp, { passive: false });
+    document.addEventListener('pointercancel', () => { activeGesture = null; });
 
     controller.addEventListener('select', () => {
       if (!placementPreview || targetPlaced) return;
@@ -1286,10 +1134,8 @@
       if (Date.now() < placementAllowedAt) return;
 
       updateTargetPreview();
-
       targetPlaced = true;
       placementPreview = false;
-
       scoreboard.style.display = 'block';
 
       status.textContent =
@@ -1303,7 +1149,6 @@
 
       scene.remove(target);
       disposeTarget(target);
-
       target = createTarget(TARGET_TYPES[selectedTargetIndex].id);
       scene.add(target);
       target.visible = true;
@@ -1321,7 +1166,6 @@
 
       crosshair.style.display = 'block';
       scoreboard.style.display = 'none';
-
       weaponRoot.visible = weaponLoaded;
 
       devToggle.style.display = 'block';
@@ -1330,10 +1174,7 @@
       showDevHome();
 
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
-
-      updateStatusForPreparation(
-        'przesuń poziomo: tarcza · pionowo: dystans'
-      );
+      updateStatusForPreparation('przesuń poziomo: tarcza · pionowo: dystans');
     });
 
     renderer.xr.addEventListener('sessionend', () => {
