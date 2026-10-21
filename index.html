@@ -249,7 +249,7 @@
         }
 
         // Długość największego wymiaru modelu: około 35 cm.
-        const modelScale = 0.39 / largestDimension;
+        const modelScale = 0.42 / largestDimension;
         model.scale.setScalar(modelScale);
 
         // Umieszczamy środek modelu przy początku jego układu.
@@ -291,7 +291,7 @@
 
       // Pozycja względem widoku: lekko w prawo,
       // w dół i przed kamerą.
-      weaponOffset.set(0.12, -0.12, -0.42);
+      weaponOffset.set(0.13, -0.12, -0.42);
       weaponOffset.applyQuaternion(weaponWorldQuaternion);
 
       weaponRoot.position.copy(weaponWorldPosition);
