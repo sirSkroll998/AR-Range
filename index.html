@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Range Beta 0.8</title>
+  <title>AR Range Beta 0.9</title>
 
   <script type="importmap">
   {
@@ -16,6 +16,10 @@
   </script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       overflow: hidden;
@@ -38,7 +42,7 @@
       z-index: 10;
       padding: 10px;
       border-radius: 8px;
-      background: rgba(0, 0, 0, 0.82);
+      background: rgba(0, 0, 0, 0.72);
       text-align: center;
       font-size: 15px;
       pointer-events: none;
@@ -87,7 +91,7 @@
       z-index: 10;
       padding: 10px;
       border-radius: 10px;
-      background: rgba(0, 0, 0, 0.86);
+      background: rgba(0, 0, 0, 0.78);
       font-size: 14px;
       pointer-events: none;
     }
@@ -122,40 +126,42 @@
       color: #00ff88;
     }
 
-    /* Przycisk panelu deweloperskiego */
+    /* Przycisk DEV w prawym górnym rogu */
     #devToggle {
       display: none;
       position: fixed;
-      left: 12px;
-      bottom: 18px;
-      z-index: 30;
-      padding: 12px 18px;
-      border: 1px solid #00ff88;
+      top: 12px;
+      right: 12px;
+      z-index: 40;
+      padding: 10px 14px;
+      border: 1px solid rgba(0, 255, 136, 0.9);
       border-radius: 10px;
-      background: rgba(0, 0, 0, 0.88);
+      background: rgba(0, 0, 0, 0.55);
       color: #00ff88;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: bold;
       touch-action: manipulation;
     }
 
-    /* Panel DEV */
+    /* Główne okno menu DEV */
     #devPanel {
       display: none;
       position: fixed;
-      top: 70px;
-      left: 10px;
+      top: 58px;
       right: 10px;
-      bottom: 75px;
-      z-index: 29;
+      width: min(340px, calc(100vw - 20px));
+      max-height: calc(100dvh - 78px);
+      z-index: 39;
       overflow-y: auto;
       overscroll-behavior: contain;
-      padding: 15px;
-      box-sizing: border-box;
-      border: 1px solid rgba(0, 255, 136, 0.7);
+      padding: 14px;
+      border: 1px solid rgba(0, 255, 136, 0.55);
       border-radius: 14px;
-      background: rgba(12, 16, 20, 0.96);
+      background: rgba(10, 14, 17, 0.70);
       color: #fff;
+      box-shadow: 0 5px 24px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
     }
@@ -167,43 +173,75 @@
     #devPanel h2 {
       margin: 0 0 5px;
       color: #00ff88;
-      font-size: 21px;
+      font-size: 19px;
     }
 
-    #devPanel .devIntro {
-      margin: 0 0 15px;
-      color: #c6c6c6;
+    .devIntro {
+      margin: 0 0 12px;
+      color: #e0e0e0;
       font-size: 12px;
       line-height: 1.4;
     }
 
+    .devMenuButton {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px 11px;
+      border: 1px solid rgba(0, 255, 136, 0.75);
+      border-radius: 9px;
+      background: rgba(16, 37, 28, 0.78);
+      color: #fff;
+      text-align: left;
+      font-size: 14px;
+      font-weight: bold;
+      touch-action: manipulation;
+    }
+
+    .devMenuButton:active,
+    .devButtons button:active {
+      background: rgba(0, 90, 55, 0.9);
+    }
+
+    #weaponSettingsView {
+      display: none;
+    }
+
+    #weaponSettingsView.active {
+      display: block;
+    }
+
+    #devHomeView.hidden {
+      display: none;
+    }
+
     .devSection {
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid #41484d;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(220, 230, 235, 0.24);
     }
 
     .devSection h3 {
-      margin: 0 0 12px;
+      margin: 0 0 10px;
       color: #00ff88;
-      font-size: 15px;
+      font-size: 14px;
     }
 
     .devControl {
-      margin-bottom: 15px;
+      margin-bottom: 12px;
     }
 
     .devControl label {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 6px;
-      font-size: 14px;
+      gap: 8px;
+      margin-bottom: 4px;
+      font-size: 13px;
     }
 
     .devValue {
-      min-width: 72px;
+      min-width: 68px;
       color: #00ff88;
       text-align: right;
       font-variant-numeric: tabular-nums;
@@ -221,32 +259,32 @@
     .devButtons {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 15px;
+      gap: 7px;
+      margin-top: 12px;
     }
 
     .devButtons button {
       flex: 1;
-      min-width: 115px;
-      padding: 12px 8px;
-      border: 1px solid #00ff88;
+      min-width: 90px;
+      padding: 10px 7px;
+      border: 1px solid rgba(0, 255, 136, 0.75);
       border-radius: 8px;
-      background: #10251c;
+      background: rgba(16, 37, 28, 0.82);
       color: #fff;
-      font-size: 13px;
+      font-size: 12px;
       touch-action: manipulation;
     }
 
     .devButtons button.secondary {
-      border-color: #777;
-      background: #272b30;
+      border-color: rgba(220, 220, 220, 0.45);
+      background: rgba(35, 39, 43, 0.75);
     }
 
     #devMessage {
       min-height: 18px;
-      margin-top: 12px;
-      color: #00ff88;
-      font-size: 12px;
+      margin-top: 10px;
+      color: #baffd9;
+      font-size: 11px;
       line-height: 1.4;
     }
 
@@ -289,102 +327,119 @@
   <button id="devToggle" type="button">DEV ⚙</button>
 
   <div id="devPanel">
-    <h2>AR Range — Weapon DEV</h2>
-    <p class="devIntro">
-      Zmieniaj ustawienia i obserwuj Glocka na żywo.
-      X/Y/Z określają położenie względem kamery.
-      Obrót podawany jest w stopniach.
-    </p>
+    <!-- Ekran główny menu DEV -->
+    <div id="devHomeView">
+      <h2>AR Range — DEV</h2>
+      <p class="devIntro">
+        Wybierz kategorię ustawień, którą chcesz zmienić.
+      </p>
 
-    <div class="devSection">
-      <h3>Pozycja względem kamery</h3>
-
-      <div class="devControl">
-        <label for="weaponX">
-          <span>X — lewo / prawo</span>
-          <span class="devValue" id="weaponXValue">0.16 m</span>
-        </label>
-        <input id="weaponX" type="range"
-          min="-0.50" max="0.50" step="0.01" value="0.16">
-      </div>
-
-      <div class="devControl">
-        <label for="weaponY">
-          <span>Y — góra / dół</span>
-          <span class="devValue" id="weaponYValue">-0.16 m</span>
-        </label>
-        <input id="weaponY" type="range"
-          min="-0.50" max="0.30" step="0.01" value="-0.16">
-      </div>
-
-      <div class="devControl">
-        <label for="weaponZ">
-          <span>Z — odległość od kamery</span>
-          <span class="devValue" id="weaponZValue">-0.42 m</span>
-        </label>
-        <input id="weaponZ" type="range"
-          min="-1.00" max="-0.10" step="0.01" value="-0.42">
-      </div>
-    </div>
-
-    <div class="devSection">
-      <h3>Obrót modelu</h3>
-
-      <div class="devControl">
-        <label for="weaponRotX">
-          <span>Obrót X</span>
-          <span class="devValue" id="weaponRotXValue">0°</span>
-        </label>
-        <input id="weaponRotX" type="range"
-          min="-180" max="180" step="1" value="0">
-      </div>
-
-      <div class="devControl">
-        <label for="weaponRotY">
-          <span>Obrót Y</span>
-          <span class="devValue" id="weaponRotYValue">0°</span>
-        </label>
-        <input id="weaponRotY" type="range"
-          min="-180" max="180" step="1" value="0">
-      </div>
-
-      <div class="devControl">
-        <label for="weaponRotZ">
-          <span>Obrót Z</span>
-          <span class="devValue" id="weaponRotZValue">0°</span>
-        </label>
-        <input id="weaponRotZ" type="range"
-          min="-180" max="180" step="1" value="0">
-      </div>
-    </div>
-
-    <div class="devSection">
-      <h3>Rozmiar modelu</h3>
-
-      <div class="devControl">
-        <label for="weaponScale">
-          <span>Skala</span>
-          <span class="devValue" id="weaponScaleValue">0.45</span>
-        </label>
-        <input id="weaponScale" type="range"
-          min="0.10" max="0.80" step="0.01" value="0.45">
-      </div>
-    </div>
-
-    <div class="devButtons">
-      <button id="saveWeaponSettings" type="button">
-        Zapisz ustawienia
-      </button>
-      <button id="resetWeaponSettings" class="secondary" type="button">
-        Przywróć domyślne
-      </button>
-      <button id="closeDevPanel" class="secondary" type="button">
-        Zamknij panel
+      <button id="openWeaponSettings" class="devMenuButton" type="button">
+        🔫 Ustawienie Glocka
+        <div style="font-size:11px;font-weight:normal;color:#c8d8d0;margin-top:4px">
+          Położenie, obrót i rozmiar modelu
+        </div>
       </button>
     </div>
 
-    <div id="devMessage">
-      Ustawienia początkowe. Możesz rozpocząć regulację.
+    <!-- Ustawienia Glocka -->
+    <div id="weaponSettingsView">
+      <h2>Ustawienie Glocka</h2>
+      <p class="devIntro">
+        Zmiany widać na żywo. X/Y/Z to pozycja względem kamery.
+        Obrót jest podawany w stopniach.
+      </p>
+
+      <div class="devSection">
+        <h3>Pozycja względem kamery</h3>
+
+        <div class="devControl">
+          <label for="weaponX">
+            <span>X — lewo / prawo</span>
+            <span class="devValue" id="weaponXValue">0.16 m</span>
+          </label>
+          <input id="weaponX" type="range"
+            min="-0.50" max="0.50" step="0.005" value="0.16">
+        </div>
+
+        <div class="devControl">
+          <label for="weaponY">
+            <span>Y — góra / dół</span>
+            <span class="devValue" id="weaponYValue">-0.16 m</span>
+          </label>
+          <input id="weaponY" type="range"
+            min="-0.50" max="0.30" step="0.005" value="-0.16">
+        </div>
+
+        <div class="devControl">
+          <label for="weaponZ">
+            <span>Z — odległość od kamery</span>
+            <span class="devValue" id="weaponZValue">-0.42 m</span>
+          </label>
+          <input id="weaponZ" type="range"
+            min="-1.00" max="-0.10" step="0.005" value="-0.42">
+        </div>
+      </div>
+
+      <div class="devSection">
+        <h3>Obrót modelu</h3>
+
+        <div class="devControl">
+          <label for="weaponRotX">
+            <span>Obrót X</span>
+            <span class="devValue" id="weaponRotXValue">0°</span>
+          </label>
+          <input id="weaponRotX" type="range"
+            min="-180" max="180" step="1" value="0">
+        </div>
+
+        <div class="devControl">
+          <label for="weaponRotY">
+            <span>Obrót Y</span>
+            <span class="devValue" id="weaponRotYValue">0°</span>
+          </label>
+          <input id="weaponRotY" type="range"
+            min="-180" max="180" step="1" value="0">
+        </div>
+
+        <div class="devControl">
+          <label for="weaponRotZ">
+            <span>Obrót Z</span>
+            <span class="devValue" id="weaponRotZValue">0°</span>
+          </label>
+          <input id="weaponRotZ" type="range"
+            min="-180" max="180" step="1" value="0">
+        </div>
+      </div>
+
+      <div class="devSection">
+        <h3>Rozmiar modelu</h3>
+
+        <div class="devControl">
+          <label for="weaponScale">
+            <span>Skala</span>
+            <span class="devValue" id="weaponScaleValue">0.45</span>
+          </label>
+          <input id="weaponScale" type="range"
+            min="0.10" max="0.80" step="0.01" value="0.45">
+        </div>
+      </div>
+
+      <div class="devButtons">
+        <button id="saveWeaponSettings" type="button">
+          Zapisz
+        </button>
+        <button id="resetWeaponSettings" class="secondary" type="button">
+          Reset
+        </button>
+        <button id="backToDevMenu" class="secondary" type="button">
+          Wróć do menu
+        </button>
+      </div>
+
+      <div id="devMessage">
+        Oczekiwanie na załadowanie Glocka…
+      </div>
     </div>
   </div>
 
@@ -403,6 +458,8 @@
 
     const devToggle = document.getElementById('devToggle');
     const devPanel = document.getElementById('devPanel');
+    const devHomeView = document.getElementById('devHomeView');
+    const weaponSettingsView = document.getElementById('weaponSettingsView');
     const devMessage = document.getElementById('devMessage');
 
     const DISTANCES = [1, 5, 10, 15, 25, 50, 100];
@@ -418,8 +475,7 @@
 
     const HORIZONTAL_DEAD_ZONE = 0.02;
     const HORIZONTAL_MAX_SLOPE = 0.35;
-    const MAX_HORIZONTAL_ERROR =
-      THREE.MathUtils.degToRad(0.15);
+    const MAX_HORIZONTAL_ERROR = THREE.MathUtils.degToRad(0.15);
 
     const TRIGGER_MIN_X = 0.25;
     const TRIGGER_MAX_X = 0.75;
@@ -453,7 +509,7 @@
     document.body.appendChild(renderer.domElement);
 
     // =====================================================
-    // PANEL DEV — ustawienia modelu Glocka
+    // PANEL DEV — ustawienia Glocka
     // =====================================================
 
     const DEFAULT_WEAPON_SETTINGS = {
@@ -466,7 +522,7 @@
       scale: 0.45
     };
 
-    const STORAGE_KEY = 'arRangeWeaponSettingsV08';
+    const STORAGE_KEY = 'arRangeWeaponSettingsV09';
 
     function loadSavedWeaponSettings() {
       try {
@@ -474,7 +530,6 @@
         if (!saved) return { ...DEFAULT_WEAPON_SETTINGS };
 
         const parsed = JSON.parse(saved);
-
         const result = { ...DEFAULT_WEAPON_SETTINGS };
 
         for (const key of Object.keys(result)) {
@@ -524,7 +579,7 @@
         return value.toFixed(2);
       }
 
-      return value.toFixed(2) + ' m';
+      return value.toFixed(3) + ' m';
     }
 
     function refreshWeaponControls() {
@@ -542,7 +597,7 @@
     let weaponModel = null;
     let weaponLoaded = false;
     let weaponLargestDimension = 0;
-    let weaponModelCenter = new THREE.Vector3();
+    const weaponModelCenter = new THREE.Vector3();
 
     const weaponWorldPosition = new THREE.Vector3();
     const weaponWorldQuaternion = new THREE.Quaternion();
@@ -605,7 +660,7 @@
         applyWeaponSettings();
 
         devMessage.textContent =
-          'Podgląd na żywo. Zapisz ustawienia, aby zachować je po odświeżeniu gry.';
+          'Podgląd na żywo. Zapisz, aby zachować ustawienia po odświeżeniu.';
       });
     }
 
@@ -621,7 +676,7 @@
             'Ustawienia zapisane na tym urządzeniu.';
         } catch (error) {
           devMessage.textContent =
-            'Nie udało się zapisać ustawień. Sprawdź ustawienia przeglądarki.';
+            'Nie udało się zapisać ustawień w pamięci przeglądarki.';
           console.warn('Zapis ustawień nie powiódł się:', error);
         }
       });
@@ -633,21 +688,34 @@
         applyWeaponSettings();
 
         devMessage.textContent =
-          'Przywrócono wartości domyślne. Zapisz je, jeśli chcesz je zachować.';
+          'Przywrócono wartości domyślne. Zapisz, jeśli chcesz je zachować.';
       });
+
+    function showDevHome() {
+      devHomeView.classList.remove('hidden');
+      weaponSettingsView.classList.remove('active');
+    }
+
+    function showWeaponSettings() {
+      devHomeView.classList.add('hidden');
+      weaponSettingsView.classList.add('active');
+      refreshWeaponControls();
+    }
 
     devToggle.addEventListener('click', () => {
       const opening = !devPanel.classList.contains('open');
 
       devPanel.classList.toggle('open', opening);
-      devToggle.textContent = opening ? 'ZAMKNIJ DEV ✕' : 'DEV ⚙';
+      devToggle.textContent = opening ? 'DEV ✕' : 'DEV ⚙';
+
+      if (opening) showDevHome();
     });
 
-    document.getElementById('closeDevPanel')
-      .addEventListener('click', () => {
-        devPanel.classList.remove('open');
-        devToggle.textContent = 'DEV ⚙';
-      });
+    document.getElementById('openWeaponSettings')
+      .addEventListener('click', showWeaponSettings);
+
+    document.getElementById('backToDevMenu')
+      .addEventListener('click', showDevHome);
 
     refreshWeaponControls();
 
@@ -655,7 +723,6 @@
       weaponPath,
       (gltf) => {
         weaponModel = gltf.scene;
-
         weaponModel.updateMatrixWorld(true);
 
         const bounds = new THREE.Box3().setFromObject(weaponModel);
@@ -675,6 +742,8 @@
           weaponLargestDimension <= 0
         ) {
           console.warn('Glock: nieprawidłowy rozmiar modelu.');
+          devMessage.textContent =
+            'Model Glocka ma nieprawidłowy rozmiar.';
           return;
         }
 
@@ -685,7 +754,7 @@
         weaponRoot.visible = renderer.xr.isPresenting;
 
         devMessage.textContent =
-          'Glock załadowany. Zmiany ustawień są widoczne na żywo.';
+          'Glock załadowany. Ustawienia działają na żywo.';
 
         console.log('Glock załadowany.');
       },
@@ -703,6 +772,10 @@
     });
 
     document.getElementById('arButtonContainer').appendChild(arButton);
+
+    // =====================================================
+    // TARCZE
+    // =====================================================
 
     function addDisc(group, radius, color, z) {
       const mesh = new THREE.Mesh(
@@ -894,7 +967,6 @@
         TARGET_TYPES.length;
 
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
-
       replaceTarget();
 
       updateStatusForPreparation(
@@ -912,7 +984,6 @@
       );
 
       selectedDistance = DISTANCES[index];
-
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
       updateStatusForPreparation(
@@ -1086,10 +1157,7 @@
 
       if (shotCount === 5) {
         gameFinished = true;
-
-        status.textContent =
-          'KONIEC! Wynik: ' + totalPoints + ' / 50';
-
+        status.textContent = 'KONIEC! Wynik: ' + totalPoints + ' / 50';
         status.style.color = '#00ff88';
         crosshair.style.display = 'none';
       } else {
@@ -1098,9 +1166,11 @@
     }
 
     function handlePointerDown(event) {
-      // Dotknięcia panelu DEV nie mogą uruchamiać gestów gry.
-      if (devPanel.contains(event.target) ||
-          devToggle.contains(event.target)) {
+      // Panel DEV nie może wywoływać gestów gry.
+      if (
+        devPanel.contains(event.target) ||
+        devToggle.contains(event.target)
+      ) {
         activeGesture = null;
         return;
       }
@@ -1142,7 +1212,6 @@
 
       activeGesture.endX = event.clientX;
       activeGesture.endY = event.clientY;
-
       event.preventDefault();
     }
 
@@ -1159,7 +1228,6 @@
 
       const gesture = activeGesture;
       activeGesture = null;
-
       event.preventDefault();
 
       const dx = gesture.endX - gesture.startX;
@@ -1191,7 +1259,6 @@
       if (dy <= 0) return;
 
       const horizontalError = calculateHorizontalError(dx, dy);
-
       if (horizontalError === null) return;
 
       fireShot(horizontalError);
@@ -1227,7 +1294,6 @@
 
       status.textContent =
         'Tarcza zawieszona. Gest w dół w dolnej części ekranu — strzał.';
-
       status.style.color = '#00ff88';
     });
 
@@ -1261,6 +1327,7 @@
       devToggle.style.display = 'block';
       devPanel.classList.remove('open');
       devToggle.textContent = 'DEV ⚙';
+      showDevHome();
 
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
@@ -1282,6 +1349,7 @@
       devPanel.classList.remove('open');
       devToggle.style.display = 'none';
       devToggle.textContent = 'DEV ⚙';
+      showDevHome();
     });
 
     renderer.setAnimationLoop(() => {
