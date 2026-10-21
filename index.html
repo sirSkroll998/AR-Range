@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Range Beta 0.5</title>
+  <title>AR Range Beta 0.6</title>
 
   <style>
     body {
@@ -141,6 +141,9 @@
     import { ARButton } from
       'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/webxr/ARButton.js';
 
+    import { GLTFLoader } from
+      'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+
     const status = document.getElementById('status');
     const crosshair = document.getElementById('crosshair');
     const scoreboard = document.getElementById('scoreboard');
@@ -158,7 +161,6 @@
     const MIN_GESTURE_LENGTH = 80;
     const PLACEMENT_COOLDOWN = 500;
 
-    // Maksymalny dodatkowy błąd poziomy podczas strzału.
     const HORIZONTAL_DEAD_ZONE = 0.02;
     const HORIZONTAL_MAX_SLOPE = 0.35;
     const MAX_HORIZONTAL_ERROR =
@@ -187,6 +189,82 @@
     renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
 
+    // Oświetlenie modelu 3D.
+    scene.add(
+      new THREE.HemisphereLight(0xffffff, 0x444444, 2)
+    );
+
+    const weaponLight = new THREE.DirectionalLight(
+      0xffffff,
+      2
+    );
+
+    weaponLight.position.set(0, 2, 1);
+    scene.add(weaponLight);
+
+    // Kontener modelu pistoletu.
+    const weaponRoot = new THREE.Group();
+    weaponRoot.visible = false;
+    scene.add(weaponRoot);
+
+    let weaponModel = null;
+    let weaponLoaded = false;
+
+    // Wczytanie modelu Glocka z repozytorium.
+    const gltfLoader = new GLTFLoader();
+
+    gltfLoader.load(
+      'assets/weapons/glock/Glock%2019%20Gen%204%20(1).glb',
+
+      (gltf) => {
+        weaponModel = gltf.scene;
+
+        // Wyznaczenie wymiarów modelu.
+        const box = new THREE.Box3().setFromObject(weaponModel);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+
+        const largestDimension = Math.max(
+          size.x,
+          size.y,
+          size.z
+        );
+
+        // Wstępna skala modelu.
+        // Po teście dopasujemy ją do rzeczywistego wyglądu.
+        if (largestDimension > 0) {
+          weaponModel.scale.setScalar(
+            0.22 / largestDimension
+          );
+        }
+
+        // Wycentrowanie modelu względem kontenera.
+        weaponModel.position.sub(center);
+
+        weaponRoot.add(weaponModel);
+        weaponLoaded = true;
+
+        console.log('Glock GLB załadowany:', size);
+
+        status.textContent = 'Glock załadowany — uruchom tryb AR';
+        status.style.color = '#00ff88';
+      },
+
+      undefined,
+
+      (error) => {
+        console.error(
+          'Nie udało się wczytać modelu Glocka:',
+          error
+        );
+
+        status.textContent =
+          'Błąd ładowania Glocka — sprawdź ścieżkę pliku';
+
+        status.style.color = '#ff7777';
+      }
+    );
+
     const arButton = ARButton.createButton(renderer, {
       optionalFeatures: ['dom-overlay'],
       domOverlay: { root: document.body }
@@ -208,7 +286,13 @@
       return mesh;
     }
 
-    function addRing(group, radius, color, z, thickness = 0.0016) {
+    function addRing(
+      group,
+      radius,
+      color,
+      z,
+      thickness = 0.0016
+    ) {
       const mesh = new THREE.Mesh(
         new THREE.RingGeometry(
           Math.max(0.001, radius - thickness / 2),
@@ -261,7 +345,13 @@
         addDisc(group, 0.25, 0xffffff, -0.001);
 
         for (let i = 1; i <= 10; i++) {
-          addRing(group, i * 0.025, 0x111111, 0.002, 0.0012);
+          addRing(
+            group,
+            i * 0.025,
+            0x111111,
+            0.002,
+            0.0012
+          );
         }
 
         addDisc(group, 0.018, 0xc62828, 0.004);
@@ -277,7 +367,13 @@
         addDisc(group, 0.022, 0xd62828, 0.005);
 
         for (let i = 1; i <= 10; i++) {
-          addRing(group, i * 0.025, 0x111111, 0.007, 0.001);
+          addRing(
+            group,
+            i * 0.025,
+            0x111111,
+            0.007,
+            0.001
+          );
         }
       }
 
@@ -288,7 +384,9 @@
 
     function disposeTarget(object) {
       object.traverse(child => {
-        if (child.geometry) child.geometry.dispose();
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
 
         if (child.material) {
           if (Array.isArray(child.material)) {
@@ -303,7 +401,10 @@
     let selectedDistance = 25;
     let selectedTargetIndex = 0;
 
-    let target = createTarget(TARGET_TYPES[selectedTargetIndex].id);
+    let target = createTarget(
+      TARGET_TYPES[selectedTargetIndex].id
+    );
+
     target.visible = false;
     scene.add(target);
 
@@ -328,12 +429,42 @@
     let gameFinished = false;
     let marker = null;
     let markerTimer = null;
-
-    // Do tego czasu zdarzenie select nie może zawiesić tarczy.
     let placementAllowedAt = 0;
-
-    // Przechowuje gest od dotknięcia do puszczenia palca.
     let activeGesture = null;
+
+    // Ustawienie pistoletu względem aktualnego widoku kamery.
+    function updateWeaponPose() {
+      if (!weaponLoaded || !renderer.xr.isPresenting) {
+        weaponRoot.visible = false;
+        return;
+      }
+
+      const xrCamera = renderer.xr.getCamera(camera);
+
+      xrCamera.updateMatrixWorld(true);
+
+      const camPosition = new THREE.Vector3();
+      const camQuaternion = new THREE.Quaternion();
+      const camRight = new THREE.Vector3(1, 0, 0);
+      const camUp = new THREE.Vector3(0, 1, 0);
+      const camForward = new THREE.Vector3(0, 0, -1);
+
+      xrCamera.getWorldPosition(camPosition);
+      xrCamera.getWorldQuaternion(camQuaternion);
+
+      camRight.applyQuaternion(camQuaternion);
+      camUp.applyQuaternion(camQuaternion);
+      camForward.applyQuaternion(camQuaternion);
+
+      // Nieco w prawo, poniżej środka i przed kamerą.
+      weaponRoot.position.copy(camPosition);
+      weaponRoot.position.addScaledVector(camRight, 0.14);
+      weaponRoot.position.addScaledVector(camUp, -0.19);
+      weaponRoot.position.addScaledVector(camForward, 0.42);
+
+      weaponRoot.quaternion.copy(camQuaternion);
+      weaponRoot.visible = true;
+    }
 
     function updateStatusForPreparation(message = '') {
       const targetName = TARGET_TYPES[selectedTargetIndex].name;
@@ -377,7 +508,10 @@
       scene.remove(oldTarget);
       disposeTarget(oldTarget);
 
-      target = createTarget(TARGET_TYPES[selectedTargetIndex].id);
+      target = createTarget(
+        TARGET_TYPES[selectedTargetIndex].id
+      );
+
       target.visible = true;
       scene.add(target);
     }
@@ -387,7 +521,6 @@
         (selectedTargetIndex + direction + TARGET_TYPES.length) %
         TARGET_TYPES.length;
 
-      // Zmiana ustawień uruchamia blokadę zawieszania.
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
       replaceTarget();
@@ -408,7 +541,6 @@
 
       selectedDistance = DISTANCES[index];
 
-      // Każda zmiana dystansu wymaga osobnego dotknięcia.
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
       updateStatusForPreparation(
@@ -480,7 +612,8 @@
       shotCell.textContent = shotCount;
 
       const resultCell = document.createElement('td');
-      resultCell.textContent = points > 0 ? 'TRAFIENIE' : 'PUDŁO';
+      resultCell.textContent =
+        points > 0 ? 'TRAFIENIE' : 'PUDŁO';
 
       const pointsCell = document.createElement('td');
       pointsCell.textContent = points;
@@ -490,7 +623,9 @@
       row.appendChild(pointsCell);
 
       scoreRows.appendChild(row);
-      totalElement.textContent = 'Suma: ' + totalPoints + ' / 50';
+
+      totalElement.textContent =
+        'Suma: ' + totalPoints + ' / 50';
     }
 
     function calculateHorizontalError(dx, dy) {
@@ -516,7 +651,9 @@
     }
 
     function fireShot(horizontalErrorAngle) {
-      if (!targetPlaced || gameFinished || shotCount >= 5) return;
+      if (!targetPlaced || gameFinished || shotCount >= 5) {
+        return;
+      }
 
       const xrCamera = renderer.xr.getCamera(camera);
 
@@ -601,8 +738,6 @@
       const y = event.clientY / window.innerHeight;
 
       if (targetPlaced) {
-        // Gest strzału rozpoczyna się w dolnej,
-        // środkowej części ekranu.
         if (
           x < TRIGGER_MIN_X ||
           x > TRIGGER_MAX_X ||
@@ -660,22 +795,15 @@
       if (length < MIN_GESTURE_LENGTH) return;
 
       if (!targetPlaced) {
-        // KLUCZOWA POPRAWKA:
-        // Każdy dłuższy gest w fazie przygotowania uruchamia
-        // półsekundową blokadę zawieszenia tarczy.
-        // Chroni to również przed opóźnionym zdarzeniem select.
-        placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
+        placementAllowedAt =
+          Date.now() + PLACEMENT_COOLDOWN;
 
-        // Wyraźnie poziomy gest zmienia rodzaj tarczy.
         if (Math.abs(dx) > Math.abs(dy) * 1.2) {
           changeTarget(dx > 0 ? 1 : -1);
           return;
         }
 
-        // Wyraźnie pionowy gest zmienia dystans.
         if (Math.abs(dy) > Math.abs(dx) * 1.2) {
-          // W górę: większy dystans.
-          // W dół: mniejszy dystans.
           changeDistance(dy < 0 ? 1 : -1);
           return;
         }
@@ -687,8 +815,6 @@
         return;
       }
 
-      // FAZA STRZELANIA:
-      // Tylko gest skierowany w dół oddaje strzał.
       if (dy <= 0) return;
 
       const horizontalError = calculateHorizontalError(dx, dy);
@@ -715,14 +841,8 @@
     });
 
     controller.addEventListener('select', () => {
-      // Zawieszenie jest możliwe wyłącznie podczas przygotowania.
       if (!placementPreview || targetPlaced) return;
-
-      // Nie reaguj, gdy palec nadal wykonuje gest.
       if (activeGesture !== null) return;
-
-      // Nie pozwól, aby ten sam gest zmienił ustawienia
-      // i jednocześnie zawiesił tarczę.
       if (Date.now() < placementAllowedAt) return;
 
       updateTargetPreview();
@@ -745,7 +865,10 @@
       scene.remove(target);
       disposeTarget(target);
 
-      target = createTarget(TARGET_TYPES[selectedTargetIndex].id);
+      target = createTarget(
+        TARGET_TYPES[selectedTargetIndex].id
+      );
+
       scene.add(target);
       target.visible = true;
 
@@ -757,13 +880,15 @@
       activeGesture = null;
 
       removeMarker();
+
       scoreRows.replaceChildren();
       totalElement.textContent = 'Suma: 0 / 50';
 
       crosshair.style.display = 'block';
       scoreboard.style.display = 'none';
 
-      placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
+      placementAllowedAt =
+        Date.now() + PLACEMENT_COOLDOWN;
 
       updateStatusForPreparation(
         'przesuń poziomo: tarcza · pionowo: dystans'
@@ -776,19 +901,28 @@
       placementPreview = false;
       activeGesture = null;
 
+      weaponRoot.visible = false;
+
       crosshair.style.display = 'none';
       scoreboard.style.display = 'none';
     });
 
     renderer.setAnimationLoop(() => {
       updateTargetPreview();
+      updateWeaponPose();
       renderer.render(scene, camera);
     });
 
     window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.aspect =
+        window.innerWidth / window.innerHeight;
+
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+      );
     });
   </script>
 </body>
