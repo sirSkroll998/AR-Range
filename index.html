@@ -4,7 +4,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Range Beta 0.5</title>
+  <title>AR Range Beta 0.7</title>
+
+  <!-- Wspólna wersja Three.js dla silnika, AR i modelu GLB -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+  }
+  </script>
 
   <style>
     body {
@@ -135,11 +145,9 @@
   </div>
 
   <script type="module">
-    import * as THREE from
-      'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
-
-    import { ARButton } from
-      'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/webxr/ARButton.js';
+    import * as THREE from 'three';
+    import { ARButton } from 'three/addons/webxr/ARButton.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
     const status = document.getElementById('status');
     const crosshair = document.getElementById('crosshair');
@@ -158,7 +166,6 @@
     const MIN_GESTURE_LENGTH = 80;
     const PLACEMENT_COOLDOWN = 500;
 
-    // Maksymalny dodatkowy błąd poziomy podczas strzału.
     const HORIZONTAL_DEAD_ZONE = 0.02;
     const HORIZONTAL_MAX_SLOPE = 0.35;
     const MAX_HORIZONTAL_ERROR =
@@ -169,6 +176,15 @@
     const TRIGGER_MIN_Y = 0.55;
 
     const scene = new THREE.Scene();
+
+    // Oświetlenie modelu 3D.
+    scene.add(
+      new THREE.HemisphereLight(0xffffff, 0x555566, 2.0)
+    );
+
+    const weaponLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    weaponLight.position.set(0.5, 1, 1);
+    scene.add(weaponLight);
 
     const camera = new THREE.PerspectiveCamera(
       70,
@@ -187,6 +203,103 @@
     renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
 
+    // =====================================================
+    // MODEL GLOCKA — ładowany niezależnie od uruchamiania AR
+    // =====================================================
+
+    const weaponRoot = new THREE.Group();
+    weaponRoot.visible = false;
+    scene.add(weaponRoot);
+
+    let weaponLoaded = false;
+
+    const weaponWorldPosition = new THREE.Vector3();
+    const weaponWorldQuaternion = new THREE.Quaternion();
+    const weaponOffset = new THREE.Vector3();
+
+    const gltfLoader = new GLTFLoader();
+
+    const weaponPath =
+      './assets/weapons/glock/Glock%2019%20Gen%204%20(1).glb';
+
+    gltfLoader.load(
+      weaponPath,
+      (gltf) => {
+        const model = gltf.scene;
+
+        // Obliczamy rozmiar modelu i skalujemy go do
+        // realistycznego, niewielkiego rozmiaru ekranowego.
+        model.updateMatrixWorld(true);
+
+        const bounds = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+
+        bounds.getSize(size);
+        bounds.getCenter(center);
+
+        const largestDimension = Math.max(
+          size.x, size.y, size.z
+        );
+
+        if (!Number.isFinite(largestDimension) ||
+            largestDimension <= 0) {
+          console.warn('Glock: nieprawidłowy rozmiar modelu.');
+          return;
+        }
+
+        // Długość największego wymiaru modelu: około 25 cm.
+        const modelScale = 0.25 / largestDimension;
+        model.scale.setScalar(modelScale);
+
+        // Umieszczamy środek modelu przy początku jego układu.
+        model.position.set(
+          -center.x * modelScale,
+          -center.y * modelScale,
+          -center.z * modelScale
+        );
+
+        // Wstępna korekta orientacji modelu.
+        // Jeśli lufa będzie skierowana w złą stronę,
+        // dopasujemy obrót po pierwszym teście.
+        model.rotation.y = Math.PI / 2;
+
+        weaponRoot.add(model);
+        weaponLoaded = true;
+
+        // Jeżeli model załadował się podczas sesji AR,
+        // pokazujemy go od razu.
+        weaponRoot.visible = renderer.xr.isPresenting;
+
+        console.log('Glock załadowany.');
+      },
+      undefined,
+      (error) => {
+        // Błąd modelu nie powinien zatrzymywać samej gry.
+        console.warn('Nie udało się załadować modelu Glocka:', error);
+      }
+    );
+
+    function updateWeaponPose() {
+      if (!weaponLoaded || !renderer.xr.isPresenting) return;
+
+      const xrCamera = renderer.xr.getCamera(camera);
+
+      xrCamera.updateMatrixWorld(true);
+      xrCamera.getWorldPosition(weaponWorldPosition);
+      xrCamera.getWorldQuaternion(weaponWorldQuaternion);
+
+      // Pozycja względem widoku: lekko w prawo,
+      // w dół i przed kamerą.
+      weaponOffset.set(0.13, -0.18, -0.42);
+      weaponOffset.applyQuaternion(weaponWorldQuaternion);
+
+      weaponRoot.position.copy(weaponWorldPosition);
+      weaponRoot.position.add(weaponOffset);
+      weaponRoot.quaternion.copy(weaponWorldQuaternion);
+    }
+
+    // Przycisk AR tworzymy niezależnie od wyniku ładowania Glocka.
     const arButton = ARButton.createButton(renderer, {
       optionalFeatures: ['dom-overlay'],
       domOverlay: { root: document.body }
@@ -328,11 +441,7 @@
     let gameFinished = false;
     let marker = null;
     let markerTimer = null;
-
-    // Do tego czasu zdarzenie select nie może zawiesić tarczy.
     let placementAllowedAt = 0;
-
-    // Przechowuje gest od dotknięcia do puszczenia palca.
     let activeGesture = null;
 
     function updateStatusForPreparation(message = '') {
@@ -387,7 +496,6 @@
         (selectedTargetIndex + direction + TARGET_TYPES.length) %
         TARGET_TYPES.length;
 
-      // Zmiana ustawień uruchamia blokadę zawieszania.
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
       replaceTarget();
@@ -408,7 +516,6 @@
 
       selectedDistance = DISTANCES[index];
 
-      // Każda zmiana dystansu wymaga osobnego dotknięcia.
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
       updateStatusForPreparation(
@@ -601,8 +708,6 @@
       const y = event.clientY / window.innerHeight;
 
       if (targetPlaced) {
-        // Gest strzału rozpoczyna się w dolnej,
-        // środkowej części ekranu.
         if (
           x < TRIGGER_MIN_X ||
           x > TRIGGER_MAX_X ||
@@ -660,22 +765,14 @@
       if (length < MIN_GESTURE_LENGTH) return;
 
       if (!targetPlaced) {
-        // KLUCZOWA POPRAWKA:
-        // Każdy dłuższy gest w fazie przygotowania uruchamia
-        // półsekundową blokadę zawieszenia tarczy.
-        // Chroni to również przed opóźnionym zdarzeniem select.
         placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
-        // Wyraźnie poziomy gest zmienia rodzaj tarczy.
         if (Math.abs(dx) > Math.abs(dy) * 1.2) {
           changeTarget(dx > 0 ? 1 : -1);
           return;
         }
 
-        // Wyraźnie pionowy gest zmienia dystans.
         if (Math.abs(dy) > Math.abs(dx) * 1.2) {
-          // W górę: większy dystans.
-          // W dół: mniejszy dystans.
           changeDistance(dy < 0 ? 1 : -1);
           return;
         }
@@ -687,8 +784,6 @@
         return;
       }
 
-      // FAZA STRZELANIA:
-      // Tylko gest skierowany w dół oddaje strzał.
       if (dy <= 0) return;
 
       const horizontalError = calculateHorizontalError(dx, dy);
@@ -715,14 +810,8 @@
     });
 
     controller.addEventListener('select', () => {
-      // Zawieszenie jest możliwe wyłącznie podczas przygotowania.
       if (!placementPreview || targetPlaced) return;
-
-      // Nie reaguj, gdy palec nadal wykonuje gest.
       if (activeGesture !== null) return;
-
-      // Nie pozwól, aby ten sam gest zmienił ustawienia
-      // i jednocześnie zawiesił tarczę.
       if (Date.now() < placementAllowedAt) return;
 
       updateTargetPreview();
@@ -763,6 +852,9 @@
       crosshair.style.display = 'block';
       scoreboard.style.display = 'none';
 
+      // Model pokaże się tylko wtedy, gdy zdążył się załadować.
+      weaponRoot.visible = weaponLoaded;
+
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
       updateStatusForPreparation(
@@ -776,12 +868,14 @@
       placementPreview = false;
       activeGesture = null;
 
+      weaponRoot.visible = false;
       crosshair.style.display = 'none';
       scoreboard.style.display = 'none';
     });
 
     renderer.setAnimationLoop(() => {
       updateTargetPreview();
+      updateWeaponPose();
       renderer.render(scene, camera);
     });
 
