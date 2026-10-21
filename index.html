@@ -262,7 +262,7 @@
         // Wstępna korekta orientacji modelu.
         // Jeśli lufa będzie skierowana w złą stronę,
         // dopasujemy obrót po pierwszym teście.
-        model.rotation.y = Math.PI / 2;
+        model.rotation.set(0, 0, 0);
 
         weaponRoot.add(model);
         weaponLoaded = true;
