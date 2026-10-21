@@ -4,9 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Range Beta 0.7</title>
+  <title>AR Range Beta 0.8</title>
 
-  <!-- Wspólna wersja Three.js dla silnika, AR i modelu GLB -->
   <script type="importmap">
   {
     "imports": {
@@ -122,6 +121,149 @@
       font-weight: bold;
       color: #00ff88;
     }
+
+    /* Przycisk panelu deweloperskiego */
+    #devToggle {
+      display: none;
+      position: fixed;
+      left: 12px;
+      bottom: 18px;
+      z-index: 30;
+      padding: 12px 18px;
+      border: 1px solid #00ff88;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.88);
+      color: #00ff88;
+      font-size: 15px;
+      font-weight: bold;
+      touch-action: manipulation;
+    }
+
+    /* Panel DEV */
+    #devPanel {
+      display: none;
+      position: fixed;
+      top: 70px;
+      left: 10px;
+      right: 10px;
+      bottom: 75px;
+      z-index: 29;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 15px;
+      box-sizing: border-box;
+      border: 1px solid rgba(0, 255, 136, 0.7);
+      border-radius: 14px;
+      background: rgba(12, 16, 20, 0.96);
+      color: #fff;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #devPanel.open {
+      display: block;
+    }
+
+    #devPanel h2 {
+      margin: 0 0 5px;
+      color: #00ff88;
+      font-size: 21px;
+    }
+
+    #devPanel .devIntro {
+      margin: 0 0 15px;
+      color: #c6c6c6;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .devSection {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #41484d;
+    }
+
+    .devSection h3 {
+      margin: 0 0 12px;
+      color: #00ff88;
+      font-size: 15px;
+    }
+
+    .devControl {
+      margin-bottom: 15px;
+    }
+
+    .devControl label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .devValue {
+      min-width: 72px;
+      color: #00ff88;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .devControl input[type="range"] {
+      display: block;
+      width: 100%;
+      height: 28px;
+      margin: 0;
+      accent-color: #00ff88;
+      touch-action: pan-y;
+    }
+
+    .devButtons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .devButtons button {
+      flex: 1;
+      min-width: 115px;
+      padding: 12px 8px;
+      border: 1px solid #00ff88;
+      border-radius: 8px;
+      background: #10251c;
+      color: #fff;
+      font-size: 13px;
+      touch-action: manipulation;
+    }
+
+    .devButtons button.secondary {
+      border-color: #777;
+      background: #272b30;
+    }
+
+    #devMessage {
+      min-height: 18px;
+      margin-top: 12px;
+      color: #00ff88;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    #arButtonContainer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 18px;
+      z-index: 5;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    #arButtonContainer > * {
+      pointer-events: auto;
+    }
   </style>
 </head>
 
@@ -144,6 +286,110 @@
     <div id="total">Suma: 0 / 50</div>
   </div>
 
+  <button id="devToggle" type="button">DEV ⚙</button>
+
+  <div id="devPanel">
+    <h2>AR Range — Weapon DEV</h2>
+    <p class="devIntro">
+      Zmieniaj ustawienia i obserwuj Glocka na żywo.
+      X/Y/Z określają położenie względem kamery.
+      Obrót podawany jest w stopniach.
+    </p>
+
+    <div class="devSection">
+      <h3>Pozycja względem kamery</h3>
+
+      <div class="devControl">
+        <label for="weaponX">
+          <span>X — lewo / prawo</span>
+          <span class="devValue" id="weaponXValue">0.16 m</span>
+        </label>
+        <input id="weaponX" type="range"
+          min="-0.50" max="0.50" step="0.01" value="0.16">
+      </div>
+
+      <div class="devControl">
+        <label for="weaponY">
+          <span>Y — góra / dół</span>
+          <span class="devValue" id="weaponYValue">-0.16 m</span>
+        </label>
+        <input id="weaponY" type="range"
+          min="-0.50" max="0.30" step="0.01" value="-0.16">
+      </div>
+
+      <div class="devControl">
+        <label for="weaponZ">
+          <span>Z — odległość od kamery</span>
+          <span class="devValue" id="weaponZValue">-0.42 m</span>
+        </label>
+        <input id="weaponZ" type="range"
+          min="-1.00" max="-0.10" step="0.01" value="-0.42">
+      </div>
+    </div>
+
+    <div class="devSection">
+      <h3>Obrót modelu</h3>
+
+      <div class="devControl">
+        <label for="weaponRotX">
+          <span>Obrót X</span>
+          <span class="devValue" id="weaponRotXValue">0°</span>
+        </label>
+        <input id="weaponRotX" type="range"
+          min="-180" max="180" step="1" value="0">
+      </div>
+
+      <div class="devControl">
+        <label for="weaponRotY">
+          <span>Obrót Y</span>
+          <span class="devValue" id="weaponRotYValue">0°</span>
+        </label>
+        <input id="weaponRotY" type="range"
+          min="-180" max="180" step="1" value="0">
+      </div>
+
+      <div class="devControl">
+        <label for="weaponRotZ">
+          <span>Obrót Z</span>
+          <span class="devValue" id="weaponRotZValue">0°</span>
+        </label>
+        <input id="weaponRotZ" type="range"
+          min="-180" max="180" step="1" value="0">
+      </div>
+    </div>
+
+    <div class="devSection">
+      <h3>Rozmiar modelu</h3>
+
+      <div class="devControl">
+        <label for="weaponScale">
+          <span>Skala</span>
+          <span class="devValue" id="weaponScaleValue">0.45</span>
+        </label>
+        <input id="weaponScale" type="range"
+          min="0.10" max="0.80" step="0.01" value="0.45">
+      </div>
+    </div>
+
+    <div class="devButtons">
+      <button id="saveWeaponSettings" type="button">
+        Zapisz ustawienia
+      </button>
+      <button id="resetWeaponSettings" class="secondary" type="button">
+        Przywróć domyślne
+      </button>
+      <button id="closeDevPanel" class="secondary" type="button">
+        Zamknij panel
+      </button>
+    </div>
+
+    <div id="devMessage">
+      Ustawienia początkowe. Możesz rozpocząć regulację.
+    </div>
+  </div>
+
+  <div id="arButtonContainer"></div>
+
   <script type="module">
     import * as THREE from 'three';
     import { ARButton } from 'three/addons/webxr/ARButton.js';
@@ -154,6 +400,10 @@
     const scoreboard = document.getElementById('scoreboard');
     const scoreRows = document.getElementById('scoreRows');
     const totalElement = document.getElementById('total');
+
+    const devToggle = document.getElementById('devToggle');
+    const devPanel = document.getElementById('devPanel');
+    const devMessage = document.getElementById('devMessage');
 
     const DISTANCES = [1, 5, 10, 15, 25, 50, 100];
 
@@ -177,7 +427,6 @@
 
     const scene = new THREE.Scene();
 
-    // Oświetlenie modelu 3D.
     scene.add(
       new THREE.HemisphereLight(0xffffff, 0x555566, 2.0)
     );
@@ -204,14 +453,96 @@
     document.body.appendChild(renderer.domElement);
 
     // =====================================================
-    // MODEL GLOCKA — ładowany niezależnie od uruchamiania AR
+    // PANEL DEV — ustawienia modelu Glocka
     // =====================================================
+
+    const DEFAULT_WEAPON_SETTINGS = {
+      x: 0.16,
+      y: -0.16,
+      z: -0.42,
+      rotX: 0,
+      rotY: 0,
+      rotZ: 0,
+      scale: 0.45
+    };
+
+    const STORAGE_KEY = 'arRangeWeaponSettingsV08';
+
+    function loadSavedWeaponSettings() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return { ...DEFAULT_WEAPON_SETTINGS };
+
+        const parsed = JSON.parse(saved);
+
+        const result = { ...DEFAULT_WEAPON_SETTINGS };
+
+        for (const key of Object.keys(result)) {
+          if (
+            typeof parsed[key] === 'number' &&
+            Number.isFinite(parsed[key])
+          ) {
+            result[key] = parsed[key];
+          }
+        }
+
+        return result;
+      } catch (error) {
+        console.warn('Nie udało się odczytać ustawień Glocka:', error);
+        return { ...DEFAULT_WEAPON_SETTINGS };
+      }
+    }
+
+    let weaponSettings = loadSavedWeaponSettings();
+
+    const settingInputs = {
+      x: document.getElementById('weaponX'),
+      y: document.getElementById('weaponY'),
+      z: document.getElementById('weaponZ'),
+      rotX: document.getElementById('weaponRotX'),
+      rotY: document.getElementById('weaponRotY'),
+      rotZ: document.getElementById('weaponRotZ'),
+      scale: document.getElementById('weaponScale')
+    };
+
+    const settingOutputs = {
+      x: document.getElementById('weaponXValue'),
+      y: document.getElementById('weaponYValue'),
+      z: document.getElementById('weaponZValue'),
+      rotX: document.getElementById('weaponRotXValue'),
+      rotY: document.getElementById('weaponRotYValue'),
+      rotZ: document.getElementById('weaponRotZValue'),
+      scale: document.getElementById('weaponScaleValue')
+    };
+
+    function formatSetting(key, value) {
+      if (key === 'rotX' || key === 'rotY' || key === 'rotZ') {
+        return Math.round(value) + '°';
+      }
+
+      if (key === 'scale') {
+        return value.toFixed(2);
+      }
+
+      return value.toFixed(2) + ' m';
+    }
+
+    function refreshWeaponControls() {
+      for (const key of Object.keys(settingInputs)) {
+        settingInputs[key].value = weaponSettings[key];
+        settingOutputs[key].textContent =
+          formatSetting(key, weaponSettings[key]);
+      }
+    }
 
     const weaponRoot = new THREE.Group();
     weaponRoot.visible = false;
     scene.add(weaponRoot);
 
+    let weaponModel = null;
     let weaponLoaded = false;
+    let weaponLargestDimension = 0;
+    let weaponModelCenter = new THREE.Vector3();
 
     const weaponWorldPosition = new THREE.Vector3();
     const weaponWorldQuaternion = new THREE.Quaternion();
@@ -222,63 +553,26 @@
     const weaponPath =
       './assets/weapons/glock/Glock%2019%20Gen%204%20(1).glb';
 
-    gltfLoader.load(
-      weaponPath,
-      (gltf) => {
-        const model = gltf.scene;
+    function applyWeaponSettings() {
+      if (!weaponModel || !weaponLoaded) return;
 
-        // Obliczamy rozmiar modelu i skalujemy go do
-        // realistycznego, niewielkiego rozmiaru ekranowego.
-        model.updateMatrixWorld(true);
+      const modelScale =
+        weaponSettings.scale / weaponLargestDimension;
 
-        const bounds = new THREE.Box3().setFromObject(model);
-        const size = new THREE.Vector3();
-        const center = new THREE.Vector3();
+      weaponModel.scale.setScalar(modelScale);
 
-        bounds.getSize(size);
-        bounds.getCenter(center);
+      weaponModel.position.set(
+        -weaponModelCenter.x * modelScale,
+        -weaponModelCenter.y * modelScale,
+        -weaponModelCenter.z * modelScale
+      );
 
-        const largestDimension = Math.max(
-          size.x, size.y, size.z
-        );
-
-        if (!Number.isFinite(largestDimension) ||
-            largestDimension <= 0) {
-          console.warn('Glock: nieprawidłowy rozmiar modelu.');
-          return;
-        }
-
-        // Długość największego wymiaru modelu: około 35 cm.
-        const modelScale = 0.45 / largestDimension;
-        model.scale.setScalar(modelScale);
-
-        // Umieszczamy środek modelu przy początku jego układu.
-        model.position.set(
-          -center.x * modelScale,
-          -center.y * modelScale,
-          -center.z * modelScale
-        );
-
-        // Wstępna korekta orientacji modelu.
-        // Jeśli lufa będzie skierowana w złą stronę,
-        // dopasujemy obrót po pierwszym teście.
-        model.rotation.set(0, 0, 0);
-
-        weaponRoot.add(model);
-        weaponLoaded = true;
-
-        // Jeżeli model załadował się podczas sesji AR,
-        // pokazujemy go od razu.
-        weaponRoot.visible = renderer.xr.isPresenting;
-
-        console.log('Glock załadowany.');
-      },
-      undefined,
-      (error) => {
-        // Błąd modelu nie powinien zatrzymywać samej gry.
-        console.warn('Nie udało się załadować modelu Glocka:', error);
-      }
-    );
+      weaponModel.rotation.set(
+        THREE.MathUtils.degToRad(weaponSettings.rotX),
+        THREE.MathUtils.degToRad(weaponSettings.rotY),
+        THREE.MathUtils.degToRad(weaponSettings.rotZ)
+      );
+    }
 
     function updateWeaponPose() {
       if (!weaponLoaded || !renderer.xr.isPresenting) return;
@@ -289,9 +583,12 @@
       xrCamera.getWorldPosition(weaponWorldPosition);
       xrCamera.getWorldQuaternion(weaponWorldQuaternion);
 
-      // Pozycja względem widoku: lekko w prawo,
-      // w dół i przed kamerą.
-      weaponOffset.set(0.16, -0.16, -0.42);
+      weaponOffset.set(
+        weaponSettings.x,
+        weaponSettings.y,
+        weaponSettings.z
+      );
+
       weaponOffset.applyQuaternion(weaponWorldQuaternion);
 
       weaponRoot.position.copy(weaponWorldPosition);
@@ -299,13 +596,113 @@
       weaponRoot.quaternion.copy(weaponWorldQuaternion);
     }
 
-    // Przycisk AR tworzymy niezależnie od wyniku ładowania Glocka.
+    for (const key of Object.keys(settingInputs)) {
+      settingInputs[key].addEventListener('input', () => {
+        weaponSettings[key] = Number(settingInputs[key].value);
+        settingOutputs[key].textContent =
+          formatSetting(key, weaponSettings[key]);
+
+        applyWeaponSettings();
+
+        devMessage.textContent =
+          'Podgląd na żywo. Zapisz ustawienia, aby zachować je po odświeżeniu gry.';
+      });
+    }
+
+    document.getElementById('saveWeaponSettings')
+      .addEventListener('click', () => {
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(weaponSettings)
+          );
+
+          devMessage.textContent =
+            'Ustawienia zapisane na tym urządzeniu.';
+        } catch (error) {
+          devMessage.textContent =
+            'Nie udało się zapisać ustawień. Sprawdź ustawienia przeglądarki.';
+          console.warn('Zapis ustawień nie powiódł się:', error);
+        }
+      });
+
+    document.getElementById('resetWeaponSettings')
+      .addEventListener('click', () => {
+        weaponSettings = { ...DEFAULT_WEAPON_SETTINGS };
+        refreshWeaponControls();
+        applyWeaponSettings();
+
+        devMessage.textContent =
+          'Przywrócono wartości domyślne. Zapisz je, jeśli chcesz je zachować.';
+      });
+
+    devToggle.addEventListener('click', () => {
+      const opening = !devPanel.classList.contains('open');
+
+      devPanel.classList.toggle('open', opening);
+      devToggle.textContent = opening ? 'ZAMKNIJ DEV ✕' : 'DEV ⚙';
+    });
+
+    document.getElementById('closeDevPanel')
+      .addEventListener('click', () => {
+        devPanel.classList.remove('open');
+        devToggle.textContent = 'DEV ⚙';
+      });
+
+    refreshWeaponControls();
+
+    gltfLoader.load(
+      weaponPath,
+      (gltf) => {
+        weaponModel = gltf.scene;
+
+        weaponModel.updateMatrixWorld(true);
+
+        const bounds = new THREE.Box3().setFromObject(weaponModel);
+        const size = new THREE.Vector3();
+
+        bounds.getSize(size);
+        bounds.getCenter(weaponModelCenter);
+
+        weaponLargestDimension = Math.max(
+          size.x,
+          size.y,
+          size.z
+        );
+
+        if (
+          !Number.isFinite(weaponLargestDimension) ||
+          weaponLargestDimension <= 0
+        ) {
+          console.warn('Glock: nieprawidłowy rozmiar modelu.');
+          return;
+        }
+
+        weaponRoot.add(weaponModel);
+        weaponLoaded = true;
+
+        applyWeaponSettings();
+        weaponRoot.visible = renderer.xr.isPresenting;
+
+        devMessage.textContent =
+          'Glock załadowany. Zmiany ustawień są widoczne na żywo.';
+
+        console.log('Glock załadowany.');
+      },
+      undefined,
+      (error) => {
+        console.warn('Nie udało się załadować modelu Glocka:', error);
+        devMessage.textContent =
+          'Nie udało się załadować Glocka. Sprawdź ścieżkę do pliku GLB.';
+      }
+    );
+
     const arButton = ARButton.createButton(renderer, {
       optionalFeatures: ['dom-overlay'],
       domOverlay: { root: document.body }
     });
 
-    document.body.appendChild(arButton);
+    document.getElementById('arButtonContainer').appendChild(arButton);
 
     function addDisc(group, radius, color, z) {
       const mesh = new THREE.Mesh(
@@ -701,6 +1098,13 @@
     }
 
     function handlePointerDown(event) {
+      // Dotknięcia panelu DEV nie mogą uruchamiać gestów gry.
+      if (devPanel.contains(event.target) ||
+          devToggle.contains(event.target)) {
+        activeGesture = null;
+        return;
+      }
+
       if (event.pointerType !== 'touch') return;
       if (gameFinished || shotCount >= 5) return;
 
@@ -852,8 +1256,11 @@
       crosshair.style.display = 'block';
       scoreboard.style.display = 'none';
 
-      // Model pokaże się tylko wtedy, gdy zdążył się załadować.
       weaponRoot.visible = weaponLoaded;
+
+      devToggle.style.display = 'block';
+      devPanel.classList.remove('open');
+      devToggle.textContent = 'DEV ⚙';
 
       placementAllowedAt = Date.now() + PLACEMENT_COOLDOWN;
 
@@ -871,6 +1278,10 @@
       weaponRoot.visible = false;
       crosshair.style.display = 'none';
       scoreboard.style.display = 'none';
+
+      devPanel.classList.remove('open');
+      devToggle.style.display = 'none';
+      devToggle.textContent = 'DEV ⚙';
     });
 
     renderer.setAnimationLoop(() => {
